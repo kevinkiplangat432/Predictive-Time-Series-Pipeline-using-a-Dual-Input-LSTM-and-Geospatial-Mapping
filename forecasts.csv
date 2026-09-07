@@ -12,7 +12,7 @@ Hagadera (Daadab),Maize,naive,60.0,60.0,False
 Hagadera (Daadab),Maize flour,naive,98.46,98.46,False
 Hagadera (Daadab),Meat (camel),naive,600.0,600.0,False
 Hagadera (Daadab),Meat (goat),naive,800.0,800.0,False
-Hagadera (Daadab),Potatoes (Irish),model,64.14,67.52366239458323,False
+Hagadera (Daadab),Potatoes (Irish),model,64.14,67.84914890110493,False
 Hagadera (Daadab),Rice,naive,100.88,100.88,False
 Hagadera (Daadab),Salt,naive,56.9,56.9,False
 Hagadera (Daadab),Sugar,naive,119.71,119.71,False
@@ -75,7 +75,7 @@ Kalobeyei (Village 2),Maize,naive,53.33,53.33,False
 Kalobeyei (Village 2),Maize flour,naive,76.67,76.67,False
 Kalobeyei (Village 2),Rice,naive,116.67,116.67,False
 Kalobeyei (Village 2),Salt,naive,58.349999999999994,58.349999999999994,False
-Kalobeyei (Village 2),Sugar,model,150.0,148.36753875017166,False
+Kalobeyei (Village 2),Sugar,model,150.0,147.42304772138596,False
 Kalobeyei (Village 2),Wheat flour,naive,83.33,83.33,False
 Kalobeyei (Village 3),Beans (dry),naive,113.33,113.33,False
 Kalobeyei (Village 3),Maize flour,naive,83.33,83.33,False
@@ -89,11 +89,11 @@ Kitui,Beans (dry),naive,94.0,94.0,False
 Kitui,Maize (white),naive,35.0,35.0,False
 Lodwar (Turkana),Maize (white),naive,70.0,70.0,False
 Mandera,Maize (white),naive,83.0,83.0,False
-Marigat (Baringo),Beans (dry),model,117.0,119.63153910636902,False
+Marigat (Baringo),Beans (dry),model,117.0,120.03440546989441,False
 Marigat (Baringo),Maize (white),naive,39.0,39.0,False
 Marsabit,Maize (white),naive,44.0,44.0,False
 Mogadishu (Kakuma),Beans (dry),naive,113.33,113.33,False
-Mogadishu (Kakuma),Maize flour,naive,85.0,85.0,False
+Mogadishu (Kakuma),Maize flour,model,85.0,80.32239019870758,False
 Mogadishu (Kakuma),Rice,naive,120.0,120.0,False
 Mogadishu (Kakuma),Salt,naive,75.0,75.0,False
 Mogadishu (Kakuma),Sugar,naive,163.33,163.33,False
