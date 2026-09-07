@@ -1,7 +1,25 @@
 <!--markdownlint-disable-->
+
 # Kenya Food Price Early Warning System
 
-A Moringa School Data Science capstone project (DSF-FT16). Turns Kenya's public food price history into an early-warning signal for unusual price movement, rather than a precise multi-month price forecast, a scope decision explained below, not a shortfall.
+> **Project status: active development.** The core pipeline, data preparation, forecasting, and anomaly detection, is built and validated. One methodological refinement is currently being tested in a separate notebook before it's merged back. Details below.
+
+---
+
+## Current Development Note
+
+>**`Kenyan_food_prices.ipynb`** (this repo's main notebook) is the stable, fully validated version. Every result in this README, the pooling comparison, the router outcome, the shock backtest, comes from this notebook, run clean, top to bottom, with no errors.
+
+>**`Kenyan_food_prices copy.ipynb`**  is where an active change to the per-pair forecast selection logic is being tested. It has not yet been merged into the main notebook, and none of the headline numbers above depend on it. It's kept as a separate file specifically so the main notebook stays citable and stable while this is worked out.
+
+>**What's being tested and why.** The current router in the main notebook makes a hard, binary choice per pair, model or naive, based on a validation comparison with as few as 4 data points. That's a known weak spot, not a guess. It mirrors a well-documented finding from the forecasting literature, most notably from the M-competitions (the largest empirical forecasting benchmarks run to date) and going back to Bates and Granger's original 1969 work on forecast combination, that confidently selecting a single best model per series tends to perform worse than blending forecasts together, especially when the evidence available to make that selection is thin. This is sometimes called the "forecast combination puzzle," the finding keeps holding up even though naive intuition says picking the winner should do better.
+
+>The development notebook replaces the hard switch with a weighted blend, model weight increases with both the strength and the volume of validation evidence, so a pair with a shaky 4-point win gets nudged only slightly away from naive, while a pair with a longer, more consistent track record earns more trust. By construction, a pair with no real evidence for the model collapses to a weight of exactly 0, identical to the current naive fallback, so this change cannot perform worse than what's already validated, it can only be more cautious where the current router was overconfident.
+
+>**What to expect.** This is not expected to make the aggregate forecast suddenly beat naive outright, the underlying price persistence documented in the main notebook doesn't change because the selection logic gets smarter. What it should do is remove the specific pattern already documented, pairs winning on validation and then losing on test, by making that kind of overcorrection mathematically harder to happen. Once tested and confirmed against the same shock backtest and routing diagnostics already in the main notebook, this will either be merged in as the new default, or documented as a tried-and-rejected approach if it doesn't hold up, either outcome gets written up honestly.
+
+---
+
 
 ## Problem
 
