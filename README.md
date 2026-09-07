@@ -38,18 +38,6 @@ What the work does support, backed by a real backtest against independently docu
 - **The anomaly detector shows a real signal.** Across 270 shortlisted pairs with any real data coverage inside one of three independently documented Kenyan price shocks (2022 Horn of Africa drought, Ukraine-linked grain and fertilizer shock, 2022-2023 fuel subsidy removal), the flag rate rises to 27.6% during shock windows versus a 9.7% baseline rate, roughly 3x elevation. This is not perfect recall, 116 of the 270 covered pairs saw no flag in their window, but it is a real, independently checked signal.
 - **Scope limitation on the anomaly result.** Nearly all pairs with usable coverage this far back in history are refugee camp markets (Kakuma, Kalobeyei, Daadab) and a small number of informal Nairobi settlements. This result speaks most directly to humanitarian and NGO use, not general smallholder farmer markets, since those series mostly lack sufficient history to have been tested here.
 
-## Current Status
-
-| Milestone | Status |
-|---|---|
-| Modelling (Prophet, per-pair LSTM, pooled embeddings, router) | Done |
-| Multi-step forecast horizon decision | Done, formally rescoped to 1-month horizon, documented in-notebook |
-| Anomaly detection and shock backtest | Done |
-| Dashboard (`app.py`) | Not started |
-| Pipeline scripts (`data_prep.py`, `train_model.py`, `generate_forecasts.py`) | Not started |
-| Deployment (Streamlit Community Cloud) | Not started |
-| Report and presentation | In progress |
-
 ## How to Run (current, notebook-only state)
 
 1. Open `Kenyan_food_prices.ipynb`.
