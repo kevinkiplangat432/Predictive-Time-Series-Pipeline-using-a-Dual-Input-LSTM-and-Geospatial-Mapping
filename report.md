@@ -1,3 +1,4 @@
+<!--markdownlint-disable-->
 # Technical Report: Kenya Food Price Early Warning System
 
 ## 1. Project Overview
