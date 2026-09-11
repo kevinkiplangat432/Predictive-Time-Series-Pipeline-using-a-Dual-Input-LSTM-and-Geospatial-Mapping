@@ -1,0 +1,2 @@
+timestamp_sent,as_of_date,market,commodity,alert_type,basis,phone_masked,message,status,demo_mode
+2026-09-11T12:49:59,2024-12-01,Kisumu,Beans,ANOMALY,anomaly,+254743***266,KFPEWS WARNING: An unusual Beans price movement has been detected in Kisumu. Current price: KES 83/kg. The movement exceeds the market's historical volatility threshold. Please verify local market conditions.,Sent (Demo Mode) - not actually delivered,True

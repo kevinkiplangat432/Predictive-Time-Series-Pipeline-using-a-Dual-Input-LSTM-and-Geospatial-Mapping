@@ -49,6 +49,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+import sms_utils  # SMS Early Warning Notification module (see sms_utils.py)
+
 # --------------------------------------------------------------------------
 # CONFIG
 # --------------------------------------------------------------------------
@@ -134,6 +136,40 @@ CUSTOM_CSS = """
         font-size: 0.85rem;
         color: #6b5c1e;
     }
+
+    /* Sidebar: force a dark background with white text so labels stay
+       readable regardless of the browser/Streamlit theme setting. */
+    section[data-testid="stSidebar"] {
+        background-color: #0b1f3a;
+    }
+    section[data-testid="stSidebar"] * {
+        color: #ffffff !important;
+    }
+    section[data-testid="stSidebar"] .stRadio > label {
+        color: #ffffff !important;
+    }
+    section[data-testid="stSidebar"] [data-baseweb="radio"] div {
+        border-color: #ffffff !important;
+    }
+    section[data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.25);
+    }
+
+    /* Persistent dark footer bar shown at the bottom of every page */
+    .app-footer {
+        background-color: #0b1f3a;
+        color: #ffffff;
+        padding: 14px 20px;
+        border-radius: 8px;
+        margin-top: 28px;
+        font-size: 0.85rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .app-footer a, .app-footer span { color: #ffffff; }
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -247,7 +283,8 @@ with st.sidebar:
     page = st.radio(
         "Navigate",
         ["Overview", "Price History & Anomalies", "Early Warnings",
-         "Markets Monitor", "Decision Support", "Reports & Export", "About"],
+         "Markets Monitor", "Decision Support", "SMS Alerts",
+         "Reports & Export", "About"],
         label_visibility="collapsed",
     )
     st.markdown("---")
@@ -468,9 +505,6 @@ if page == "Overview":
             })
         st.dataframe(pd.DataFrame(glance_rows), use_container_width=True, hide_index=True, height=300)
 
-    st.markdown("---")
-    st.caption("Kenya Food Price Early Warning System | Data Sources: WFP Food Prices, NASA POWER Weather")
-
 # --------------------------------------------------------------------------
 # PAGE: PRICE HISTORY & ANOMALIES
 # --------------------------------------------------------------------------
@@ -559,6 +593,160 @@ elif page == "Decision Support":
     )
 
 # --------------------------------------------------------------------------
+# PAGE: SMS ALERTS
+# --------------------------------------------------------------------------
+
+elif page == "SMS Alerts":
+    st.markdown("### SMS Early Warning Notification")
+    st.caption(
+        "Send an SMS alert to a stakeholder (farmer, trader, county agricultural "
+        "officer, or food-security organization) using the same anomaly flag and "
+        "blended forecast already shown on the dashboard. No new prediction logic "
+        "is used here."
+    )
+
+    sms_col1, sms_col2 = st.columns([1, 1])
+    with sms_col1:
+        sms_market = st.selectbox("Select Market", all_markets, key="sms_market",
+                                   index=all_markets.index(selected_market))
+    with sms_col2:
+        sms_commodity = st.selectbox("Select Commodity", all_commodities, key="sms_commodity",
+                                      index=all_commodities.index(selected_commodity))
+
+    # Pull the same current price / forecast / flag used elsewhere in the app,
+    # just for the market+commodity chosen on this page.
+    sms_hist = price_history[
+        (price_history["market"] == sms_market) & (price_history["commodity"] == sms_commodity)
+    ].sort_values("date")
+    sms_fc_row = forecasts[
+        (forecasts["market"] == sms_market) & (forecasts["commodity"] == sms_commodity)
+    ]
+
+    if sms_hist.empty or sms_fc_row.empty:
+        st.warning("No data available for this market/commodity combination.")
+    else:
+        sms_fc_row = sms_fc_row.iloc[0]
+        sms_current_price = sms_hist["price_per_kg"].iloc[-1]
+        sms_as_of_date = str(sms_hist["date"].iloc[-1].date())
+        sms_forecast_price = sms_fc_row["display_forecast"]
+        sms_flagged = bool(sms_fc_row["latest_flagged"])
+
+        decision = sms_utils.classify_alert(sms_current_price, sms_forecast_price, sms_flagged)
+
+        # ---- Alert status summary ----
+        st.markdown("#### Alert status")
+        s1, s2, s3, s4 = st.columns(4)
+        s1.metric("Current Price", f"{sms_current_price:.2f} KES/kg")
+        s2.metric("Forecast Price", f"{sms_forecast_price:.2f} KES/kg")
+        pct_chg_sms = (sms_forecast_price - sms_current_price) / sms_current_price * 100
+        s3.metric("Change", f"{pct_chg_sms:+.1f}%")
+        s4.markdown(
+            f"**Alert type:** {decision.alert_type or 'None'}"
+            + (f"  \n*basis: {decision.basis}*" if decision.basis else "")
+        )
+        st.caption(decision.reason)
+
+        if decision.basis == "forecast_only":
+            st.info(
+                "This alert is based on the forecast alone (no anomaly flag). "
+                "The notebook's evaluation found no model reliably beats the naive "
+                "baseline per pair, so treat this as directional context, not a "
+                "precise prediction.",
+                icon="ℹ️",
+            )
+        elif decision.basis == "anomaly":
+            st.info(
+                "This alert is anomaly-confirmed: the residual-based detector flagged "
+                "this month independently of the forecast.",
+                icon="🔎",
+            )
+
+        st.markdown("---")
+
+        # ---- Recipient + demo mode ----
+        st.markdown("#### Recipient")
+        r1, r2 = st.columns([2, 1])
+        with r1:
+            raw_phone = st.text_input(
+                "Stakeholder phone number (Kenyan format, e.g. 0712345678 or +254712345678)",
+                key="sms_phone",
+            )
+        with r2:
+            demo_mode = st.toggle(
+                "Demo Mode (simulate sending, no real SMS or credits used)",
+                value=not sms_utils._has_real_credentials(),
+                help="Automatically on if SMS_API_KEY / SMS_USERNAME are not configured.",
+            )
+
+        normalized_phone = sms_utils.normalize_kenyan_phone(raw_phone)
+        if raw_phone and not normalized_phone:
+            st.error("That doesn't look like a valid Kenyan phone number. Use formats like "
+                      "0712345678, 254712345678, or +254712345678.")
+
+        # ---- Message preview ----
+        st.markdown("#### Message preview")
+        preview_message = sms_utils.build_sms_message(
+            decision, sms_market, sms_commodity, sms_current_price, sms_forecast_price
+        )
+        st.text_area("SMS content", value=preview_message, height=110, disabled=True)
+        st.caption(f"{len(preview_message)} characters")
+
+        # ---- Send button ----
+        can_send_real_alert = decision.alert_type is not None
+        send_disabled = not normalized_phone or (not can_send_real_alert and not demo_mode)
+
+        if not can_send_real_alert and not demo_mode:
+            st.caption(
+                "No HIGH_PRICE, LOW_PRICE, or ANOMALY condition is currently active for "
+                "this pair, so sending is disabled unless Demo Mode is on."
+            )
+
+        if st.button("📤 Send SMS", disabled=send_disabled, type="primary"):
+            history_df = sms_utils.load_alert_history()
+            duplicate = (
+                decision.alert_type is not None
+                and sms_utils.already_alerted(
+                    history_df, sms_market, sms_commodity, decision.alert_type, sms_as_of_date
+                )
+            )
+            if duplicate:
+                st.warning(
+                    f"An alert of type {decision.alert_type} was already sent for "
+                    f"{sms_commodity} in {sms_market} for {sms_as_of_date}. Skipping to "
+                    f"avoid a duplicate message."
+                )
+            else:
+                status = sms_utils.send_sms(normalized_phone, preview_message, demo_mode=demo_mode)
+                sms_utils.log_alert(
+                    as_of_date=sms_as_of_date, market=sms_market, commodity=sms_commodity,
+                    alert_type=decision.alert_type, basis=decision.basis,
+                    phone=normalized_phone, message=preview_message, status=status,
+                    demo_mode=demo_mode,
+                )
+                if status.startswith("Sent"):
+                    st.success(status)
+                else:
+                    st.error(status)
+
+        st.markdown("---")
+
+        # ---- Alert history ----
+        st.markdown("#### Alert history")
+        history_df = sms_utils.load_alert_history()
+        if history_df.empty:
+            st.caption("No alerts sent yet.")
+        else:
+            st.dataframe(
+                history_df.sort_values("timestamp_sent", ascending=False).rename(columns={
+                    "timestamp_sent": "Sent At", "as_of_date": "As Of", "market": "Market",
+                    "commodity": "Commodity", "alert_type": "Type", "basis": "Basis",
+                    "phone_masked": "Phone", "message": "Message", "status": "Status",
+                    "demo_mode": "Demo",
+                }),
+                use_container_width=True, hide_index=True, height=280,
+            )
+
+# --------------------------------------------------------------------------
 # PAGE: REPORTS & EXPORT
 # --------------------------------------------------------------------------
 
@@ -605,3 +793,15 @@ elif page == "About":
         shown as supporting context rather than a precise prediction.
         """
     )
+
+# --------------------------------------------------------------------------
+# GLOBAL FOOTER (shown on every page)
+# --------------------------------------------------------------------------
+
+st.markdown(
+    """<div class="app-footer">
+    <span>Kenya Food Price Early Warning System | Data Sources: WFP Food Prices, NASA POWER Weather</span>
+    <span>Developed for better food security decisions 💙</span>
+    </div>""",
+    unsafe_allow_html=True,
+)
