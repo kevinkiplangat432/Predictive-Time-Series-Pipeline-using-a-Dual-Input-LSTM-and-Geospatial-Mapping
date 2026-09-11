@@ -1,18 +1,3 @@
-"""
-generate_forecasts.py
-
-Third pipeline script for the Kenya Food Price Early Warning System.
-Loads the master price table and the trained router's selection results,
-rebuilds the anomaly detection layer (not persisted elsewhere), and writes
-forecasts.csv and price_history.csv in the exact shape app.py expects.
-
-Run after data_prep.py and train_model.py have produced:
-    data/master.parquet
-    data/shortlist.parquet
-    model/selection_results.parquet
-    model/encoders_and_scalers.pkl
-"""
-
 import argparse
 import pickle
 from pathlib import Path
