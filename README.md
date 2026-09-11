@@ -1,71 +1,109 @@
 <!--markdownlint-disable-->
 # Kenya Food Price Early Warning System
 
-> **Project status: modelling and anomaly detection validated. Dashboard and deployment in progress.**
+> **Status: modelling and anomaly detection validated, seeded for reproducibility. Dashboard built, deployment in progress.**
 
-## Problem
+## Overview
 
-Farmers, traders, and food security institutions in Kenya often act on current or historical prices rather than any forward signal. This project investigates whether historical price and weather data can support two things: a useful price forecast, and a system that flags when a market is starting to behave outside its own normal range early enough to matter.
+A system that forecasts Kenyan staple food prices and flags markets moving outside their own normal range, built on public WFP price data and NASA POWER weather data. Intended users are farmers timing sales, traders managing inventory, and NGOs and county offices watching for early signs of food-price stress.
 
-## What this project actually delivers
+## CRISP-DM Mapping
 
-The original objective aimed to forecast prices two to three months ahead and beat a naive persistence baseline. Over the course of the project, three separate model families, Prophet, an independent per-pair LSTM, and a pooled entity-embedding LSTM, were all tested against that goal, and none reliably beat naive at the individual market-commodity level. This is documented as a real finding about how persistent Kenyan staple food prices are month to month, not treated as an unresolved bug.
+This project follows CRISP-DM, with two deliberate departures from the standard six phases, noted below. `Kenyan_food_prices.ipynb` is organized section-by-section to match.
 
-What the work does support, backed by a real backtest against independently documented events, is a residual-based anomaly detector that flags unusual price movement meaningfully more often during real shocks than during ordinary months. See Key Findings below for the numbers.
+| CRISP-DM Phase | Notebook Section(s) | Covers |
+|---|---|---|
+| Business Understanding | 1 | Objectives, stakeholders, success criteria, hypotheses |
+| Data Understanding | 2 | Data sources, structure, initial quality assessment (on raw, uncleaned data) |
+| Data Preparation | 3 | Cleaning, unit standardization, scope and retail selection, historical coverage, outlier handling, weather integration |
+| *(project-specific)* Exploratory Data Analysis | 4 | Deferred until after Section 3, not nested under Data Understanding as canonical CRISP-DM would place it — raw units and trade-level scope aren't yet comparable at the point Data Understanding runs |
+| *(project-specific)* Feature Engineering | 5 | Broken out as its own section rather than folded into Data Preparation, since it involves the target transform and lag validation, not just data cleaning |
+| Modelling | 6 | Naive baseline, Prophet, LSTM (per-pair and pooled), validation-weighted model selection |
+| *(project-specific)* Anomaly Detection | 7 | Not a CRISP-DM phase — the early-warning component of the system, built on Modelling's output |
+| Evaluation | 8 | Section 1's criteria checked against actual results, not restated as new findings |
+| Deployment | 9 | Pipeline scripts, dashboard, current deployment status |
+| *(project-specific)* Findings / Conclusion | 10, 11 | Cross-section synthesis and honest assessment against the original objectives |
+
+## Architecture
+
+```
+WFP Kenya Food Prices (HDX)  ─┐
+NASA POWER API (weather)     ─┴─→  data_prep.py  ─→  cleaned, feature-engineered master table
+                                                            │
+                                                            ▼
+                                                     train_model.py
+                                              (naive baseline, Prophet, pooled LSTM,
+                                               per-pair LSTM, validation-weighted router)
+                                                            │
+                                                            ▼
+                                                  generate_forecasts.py
+                                        (rebuilds anomaly detection on current data,
+                                         writes forecasts.csv + price_history.csv)
+                                                            │
+                                                            ▼
+                                                 app.py (Streamlit dashboard)
+                                          map, filterable table, per-pair detail view
+```
+
+`train_model.py` is deliberately separate from `generate_forecasts.py` — training is expensive and only needs to rerun when there's meaningfully new data to learn from; regenerating forecasts and anomaly flags against already-trained models is cheap and can run far more often.
+
+| Component | Status |
+|---|---|
+| `data_prep.py` | Complete, verified against real execution |
+| `train_model.py` | Complete, seeded (`SEED = 42`) for reproducible runs |
+| `generate_forecasts.py` | Not yet written — the next concrete step |
+| `app.py` | Written, reads `forecasts.csv` / `price_history.csv` — not yet tested against real pipeline output, since `generate_forecasts.py` doesn't exist yet |
 
 ## Data Sources
 
-- **WFP Kenya Food Prices** (via HDX), retail and wholesale price observations by market and commodity. Currently covers January 2006 through August 2026 in the raw extract used.
-- **NASA POWER API**, monthly rainfall and temperature by market location, joined to price data on market coordinates and date, no API key required.
-
-## Note on the Forecast Selection Router
-
-An earlier version of the per-pair forecast selector used a hard switch, each pair's final forecast came entirely from either the model or naive persistence, chosen by a validation comparison. That version is archived as `Kenyan_food_prices_hardswitch_archive.ipynb` for reference and is superseded by the design described below.
-
-The current router replaces that switch with a weighted blend, informed by a well documented finding in forecasting research, going back to Bates and Granger's 1969 work on forecast combination and repeatedly confirmed in the M-competitions, that combining forecasts tends to outperform confidently selecting a single one, particularly when the evidence available to make that selection is thin. Model weight for each pair scales with both the strength and the volume of its validation evidence, so a pair with little evidence collapses toward naive, and a pair with more consistent support earns more trust, rather than a single validation comparison deciding the whole forecast.
-
-This design was checked against two different confidence calibrations before being finalized, and the result held both times, no pair reached even 25% model weight under either calibration, let alone the 50% threshold that would mark a pair as genuinely model-leaning. That stability across two different reasonable choices of calibration is itself the evidence this is a real property of the data, not an artifact of one arbitrary constant.
+- **WFP Kenya Food Prices** (via HDX) — retail and wholesale price observations by market and commodity. Covers January 2006 through August 2026 in the current extract.
+- **NASA POWER API** — monthly rainfall and temperature by market location, joined to price data on market coordinates and date. No API key required.
 
 ## Methodology Summary
 
-**Scope decisions.** Fuel commodities excluded as non-food. Milk, vegetable oil, bananas, and unit-incompatible kale and cabbage rows excluded because they're priced by volume or count, not weight, and this system works in price-per-kilogram terms throughout. A minimum history floor of one year of active reporting was applied before any pair was shortlisted.
+**Scope decisions.** Fuel commodities excluded as non-food. Milk, vegetable oil, bananas, and unit-incompatible kale and cabbage rows excluded because they're priced by volume or count, not weight — this system works in price-per-kilogram terms throughout. A minimum history floor of one year of active reporting was applied before any pair was shortlisted.
 
-**Resulting shortlist:** 133 market-commodity pairs across 26 markets and 14 commodities, split into 100 pairs with 3+ years of history (Prophet track) and 33 pairs with 1 to 3 years (LSTM track). Master table: 6,077 rows, 98.98% matched to weather data.
+**Resulting shortlist:** 133 market-commodity pairs across 26 markets and 14 commodities — 100 pairs with 3+ years of history (Prophet track), 33 pairs with 1 to 3 years (LSTM track). Master table: 6,077 rows, 98.98% matched to weather data.
 
-**Forecasting.** Prophet as the baseline for longer-history pairs. For shorter-history pairs, a pooled entity-embedding LSTM, sharing market and commodity representations across all series, is compared against an independent per-pair LSTM of matched capacity. Each pair's final forecast is a weighted blend of the pooled model and naive persistence, with the weight determined by how much validation evidence supports the model and how strong that evidence was, rather than a hard switch between the two. Half of the 132 modelled pairs have 4 or fewer validation rows to base that judgment on, a real data availability constraint, not a modelling shortfall, and the weighting scheme is designed to reflect that scarcity directly rather than treat every pair's validation result as equally trustworthy.
+**Forecasting.** Prophet for longer-history pairs. For shorter-history pairs, a single pooled LSTM, trained once across all pairs with no market or commodity identity input, compared against an independent per-pair LSTM of matched capacity. Each pair's final forecast is a weighted blend of the pooled model and naive persistence — weight scales with both the strength and volume of that pair's validation evidence, following Bates and Granger's (1969) forecast-combination result, rather than a hard switch between the two. An earlier hard-switch version is archived as `Kenyan_food_prices_hardswitch_archive.ipynb`. In the current seeded run, no pair reached even 25% model weight (17.5% was the highest); 108 of 132 pairs land at pure naive, the remaining 24 get a partial blend.
 
-**Anomaly detection.** Expected price for every pair defaults to naive, the previous month's observed price, consistent with the router finding that no pair earns meaningful model weight (see Key Findings). A pair is flagged when its residual exceeds 2 standard deviations of its own expanding historical residual distribution, computed using only prior data, never future information.
+**Anomaly detection.** Expected price for every pair defaults to naive persistence, consistent with no pair earning meaningful model weight. A pair is flagged when its residual exceeds 2 standard deviations of its own expanding historical residual distribution, computed using only prior data.
 
 ## Key Findings
 
+- **Pooling improves forecasting.** The pooled model achieves MAE 6.03 on the short-history (lstm-track) pairs, against MAE 15.43 for an independently trained model per pair on those same pairs — roughly a 60% reduction in error from pooling alone. An entity-embedding version of the pooled model was tried and dropped after adding no measurable improvement over this simpler version.
+- **No model reliably beats naive at the individual pair level.** The blended router beats or ties naive on 83.3% of pairs, but that figure is driven mostly by pairs routed to pure naive tying it exactly, not by the model outperforming it. Three model families — Prophet, per-pair LSTM, pooled LSTM — have all failed to reliably beat naive at the individual pair level. Treated as a real property of the data (Kenyan staple prices are highly persistent month to month), not a modelling shortfall.
+- **The anomaly detector shows a real signal.** Across 851 pair-months of coverage inside three independently documented Kenyan price shocks (2022 Horn of Africa drought, Ukraine-linked grain and fertilizer shock, 2022–2023 fuel subsidy removal), the flag rate rises to 27.6% versus a 9.7% baseline — roughly 3x elevation. Not perfect recall — 116 of 270 covered shock-pair instances saw no flag — but a real, independently checked signal.
+- **Scope limitation on the anomaly result.** Nearly all pairs with usable coverage this far back are refugee-camp markets (Kakuma, Kalobeyei, Dadaab) and informal Nairobi settlements. This speaks most directly to humanitarian and NGO use, not general smallholder farmer markets, which mostly lack sufficient history to have been tested here.
 
-- **Pooling improves forecasting.** A pooled entity-embedding model roughly halves error compared to training an independent model per pair on the same short-history pairs, MAE around 6.3 versus 14.5 in the most recent run.
-- **No model reliably beats naive at the individual pair level, and this holds regardless of how forecasts are combined.** Under a weighted blend that scales model trust by both validation strength and the amount of validation evidence available, checked across multiple runs and two different confidence calibrations, no pair reached even 25% model weight, and none crossed the 50% threshold that would mark a pair as genuinely model-leaning. The blended approach beats or ties naive on roughly 82 to 85% of pairs depending on the run, lower than a hard-switch design would show, since a hard switch trivially ties naive on every pair it doesn't touch at all, while this design allows a small model influence into more pairs, and that small influence still tends to underperform naive on the untouched test set. This is treated as a real, doubly confirmed finding, not a design flaw, at this data volume, no per-pair selection or blending scheme, however designed, currently produces a forecast that reliably improves on simply carrying the last observed price forward.
-- **The anomaly detector shows a real signal.** Across 270 shortlisted pairs with any real data coverage inside one of three independently documented Kenyan price shocks (2022 Horn of Africa drought, Ukraine-linked grain and fertilizer shock, 2022-2023 fuel subsidy removal), the flag rate rises to 27.6% during shock windows versus a 9.7% baseline rate, roughly 3x elevation. This is not perfect recall, 116 of the 270 covered pairs saw no flag in their window, but it is a real, independently checked signal.
-- **Scope limitation on the anomaly result.** Nearly all pairs with usable coverage this far back in history are refugee camp markets (Kakuma, Kalobeyei, Daadab) and a small number of informal Nairobi settlements. This result speaks most directly to humanitarian and NGO use, not general smallholder farmer markets, since those series mostly lack sufficient history to have been tested here.
+## Deployment
 
-## How to Run (current, notebook-only state)
+**Current state:** notebook-only. Open `Kenyan_food_prices.ipynb`, restart the kernel, and run all cells top to bottom in one continuous pass — later sections depend on state built earlier in the same run. Results are seeded and reproducible; the numbers above should match exactly on a fresh `Run All`.
 
-1. Open `Kenyan_food_prices.ipynb`.
-2. Restart the kernel and run all cells top to bottom in one continuous pass. Do not run cells out of order, several later sections depend on state built earlier in the same session.
-3. Confirm the printed summary numbers in the Modelling and Anomaly Detection sections before treating any of them as final, see Known Limitations on run-to-run variance.
+**Target state**, once `generate_forecasts.py` is written:
+```
+python data_prep.py && python train_model.py && python generate_forecasts.py && streamlit run app.py
+```
 
-Once the pipeline scripts exist, this section will be replaced with `python data_prep.py && python train_model.py && python generate_forecasts.py && streamlit run app.py`.
+**Remaining steps, in order:**
+1. Write `generate_forecasts.py`.
+2. Pin `requirements.txt` to exact installed versions — deferred until all pipeline scripts exist, so it reflects what the full pipeline actually ran against.
+3. Commit pre-generated `forecasts.csv` and `price_history.csv` alongside the code, so the dashboard has data on first load.
+4. Deploy to Streamlit Community Cloud; confirm it loads on both phone and laptop.
 
 ## Environment
 
 - Python 3.12, Anaconda environment.
-- pandas 3.0, note: `.groupby(...).apply()` no longer returns grouping columns by default in this version, use `.transform()` or pass `include_groups=False` where relevant, this has caused real bugs during development and is worth knowing before modifying section 5.
-- Key libraries: pandas, numpy, scikit-learn, tensorflow/keras, prophet, matplotlib, streamlit (once dashboard work starts).
-- `requirements.txt` to be pinned to exact installed versions once the pipeline scripts are written, not before, so the versions actually reflect what the code was run against.
+- pandas 3.0 — `.groupby(...).apply()` no longer returns grouping columns by default; use `.transform()` or pass `include_groups=False` where relevant. Caused real bugs during development; worth knowing before modifying Data Preparation or Feature Engineering.
+- Key libraries: pandas, numpy, scikit-learn, tensorflow/keras, prophet, matplotlib, streamlit, plotly.
 
 ## Known Limitations
 
-- LSTM training is not currently seeded. Exact MAE/MAPE figures and exact per-pair weight values vary between full runs, though the qualitative conclusions, pooling helps, no pair earns meaningful model trust, are consistent every time. A fixed seed should be added before this project is considered fully reproducible.
-- Half of the 132 modelled pairs have 4 or fewer validation rows, the minimum this project treats as usable for any model weight at all. This is a structural data availability limit, not something a different model or a different router design can work around.
-- Two of the six hypotheses stated in Business Understanding (H1, seasonality; H2, rainfall lag) received a dedicated statistical test. H2's preliminary result did not hold up under the full-scale version of the test. The remaining four hypotheses (H3 through H6) were either addressed only structurally or explicitly deferred, and are not reported as confirmed or refuted.
-- Wholesale price forecasting, more directly relevant to traders, millers, and NCPB, was scoped out in favor of retail, since retail is the price point most named stakeholders actually transact on. Wholesale rows remain intact in the source data and are a defined next phase, not a data gap.
-- The anomaly detection backtest's strongest coverage (long enough history to test against a specific 2022 shock window) skews toward refugee camp and informal settlement markets (Kakuma, Kalobeyei, Daadab, and several Nairobi informal settlements), 16 of the 26 shortlisted markets. The remaining 10, including Garissa, Marsabit, Mandera, Turkana, and Baringo, are general Kenyan county markets concentrated in arid and semi-arid regions, but mostly fall in the shorter-history LSTM track and were not part of the specific 2022 shock backtest. Coverage across both groups reflects which series WFP has monitored most consistently, not a deliberate scoping choice.
+- Half of the 132 modelled pairs have 4 or fewer validation rows — the minimum this project treats as usable for any model weight at all. A structural data availability limit, not something a different model or router design can work around.
+- Two of the six hypotheses in Business Understanding (H1 seasonality, H2 rainfall lag) received a dedicated statistical test. H2's preliminary result did not hold up at full scale. H3–H6 were addressed only structurally or explicitly deferred, and are not reported as confirmed or refuted.
+- Wholesale price forecasting was scoped out in favor of retail, the price point most named stakeholders actually transact on. Wholesale rows remain intact in the source data — a defined next phase, not a data gap.
+- The anomaly backtest's strongest coverage skews toward refugee-camp and informal-settlement markets (16 of 26 shortlisted markets). The remaining 10 — general Kenyan county markets in arid and semi-arid regions — mostly fall in the shorter-history LSTM track and weren't part of the 2022 shock backtest. This reflects which series WFP has monitored most consistently, not a deliberate scoping choice.
+- One shortlisted market, Hola (Tana River), has no usable weather match — it lacks coordinates in the source WFP data, so it's excluded from the weather join entirely rather than imputed.
 
 ## Acknowledgments
 
