@@ -1,133 +1,133 @@
-market,commodity,chosen_forecast,naive_forecast,display_forecast,latest_flagged
-Ethiopia (Kakuma),Beans (dry),naive,116.67,116.67,False
-Ethiopia (Kakuma),Maize,blend,56.67,56.685836767736134,False
-Ethiopia (Kakuma),Maize flour,naive,90.0,90.0,False
-Ethiopia (Kakuma),Rice,naive,130.0,130.0,False
-Ethiopia (Kakuma),Salt,naive,75.0,75.0,False
-Ethiopia (Kakuma),Sugar,blend,163.33,163.32385239444417,False
-Ethiopia (Kakuma),Wheat flour,blend,91.67,91.77090647100687,False
-Garissa,Maize (white),naive,70.0,70.0,False
-Hagadera (Daadab),Beans (dry),naive,118.79,118.79,False
-Hagadera (Daadab),Maize,naive,60.0,60.0,False
-Hagadera (Daadab),Maize flour,naive,98.46,98.46,False
-Hagadera (Daadab),Meat (camel),naive,600.0,600.0,False
-Hagadera (Daadab),Meat (goat),naive,800.0,800.0,False
-Hagadera (Daadab),Potatoes (Irish),naive,64.14,64.14,False
-Hagadera (Daadab),Rice,blend,100.88,100.837477184864,False
-Hagadera (Daadab),Salt,naive,56.9,56.9,False
-Hagadera (Daadab),Sugar,naive,119.71,119.71,False
-Hagadera (Daadab),Wheat flour,naive,99.37,99.37,False
-HongKong (Kakuma),Beans (dry),blend,143.33,143.94825012957088,False
-HongKong (Kakuma),Maize,naive,60.0,60.0,False
-HongKong (Kakuma),Maize flour,naive,86.67,86.67,False
-HongKong (Kakuma),Rice,naive,143.33,143.33,False
-HongKong (Kakuma),Salt,blend,66.64999999999999,66.63577309448166,False
-HongKong (Kakuma),Sugar,blend,160.0,159.7758674415536,False
-HongKong (Kakuma),Wheat flour,naive,90.0,90.0,False
-IFO (Daadab),Beans (dry),naive,120.5,120.5,False
-IFO (Daadab),Maize,blend,68.13,68.07758344709514,False
-IFO (Daadab),Maize flour,naive,101.13,101.13,False
-IFO (Daadab),Meat (camel),blend,640.97,640.9798882329698,False
-IFO (Daadab),Meat (goat),naive,808.94,808.94,False
-IFO (Daadab),Potatoes (Irish),naive,65.16,65.16,False
-IFO (Daadab),Rice,naive,117.73,117.73,False
-IFO (Daadab),Salt,naive,84.45,84.45,False
-IFO (Daadab),Sugar,naive,120.0,120.0,False
-IFO (Daadab),Wheat flour,naive,99.95,99.95,False
-Kajiado,Beans (dry),naive,100.0,100.0,False
-Kajiado,Maize (white),blend,53.0,52.94049744705219,False
-Kakuma 2,Beans (dry),naive,120.0,120.0,False
-Kakuma 2,Maize,naive,56.67,56.67,False
-Kakuma 2,Maize flour,naive,78.33,78.33,False
-Kakuma 2,Potatoes (Irish),naive,90.0,90.0,False
-Kakuma 2,Rice,naive,113.33,113.33,False
-Kakuma 2,Salt,naive,75.0,75.0,False
-Kakuma 2,Sugar,naive,160.0,160.0,False
-Kakuma 2,Wheat flour,naive,83.33,83.33,False
-Kakuma 3,Beans (dry),naive,134.44,134.44,False
-Kakuma 3,Maize,naive,67.5,67.5,False
-Kakuma 3,Maize flour,naive,84.44,84.44,False
-Kakuma 3,Meat (beef),naive,550.0,550.0,False
-Kakuma 3,Meat (goat),blend,800.0,799.5599952751404,False
-Kakuma 3,Potatoes (Irish),blend,80.0,79.82689996936165,False
-Kakuma 3,Rice,naive,160.0,160.0,False
-Kakuma 3,Salt,naive,75.0,75.0,False
-Kakuma 3,Sugar,naive,154.44,154.44,False
-Kakuma 3,Wheat flour,blend,91.11,91.11427959081573,False
-Kakuma 4,Beans (dry),naive,113.33,113.33,False
-Kakuma 4,Maize,blend,53.33,53.18924580351729,False
-Kakuma 4,Maize flour,naive,80.0,80.0,False
-Kakuma 4,Potatoes (Irish),naive,100.0,100.0,False
-Kakuma 4,Rice,blend,120.0,120.02930593526484,False
-Kakuma 4,Salt,blend,75.0,75.01737577038897,False
-Kakuma 4,Sugar,naive,160.0,160.0,False
-Kakuma 4,Wheat flour,naive,90.0,90.0,False
-Kalobeyei (Village 1),Beans (dry),naive,106.67,106.67,False
-Kalobeyei (Village 1),Maize,blend,50.0,50.041665088661816,False
-Kalobeyei (Village 1),Maize flour,naive,80.0,80.0,False
-Kalobeyei (Village 1),Potatoes (Irish),naive,77.78,77.78,False
-Kalobeyei (Village 1),Rice,naive,106.67,106.67,False
-Kalobeyei (Village 1),Salt,naive,75.0,75.0,False
-Kalobeyei (Village 1),Sugar,naive,150.0,150.0,False
-Kalobeyei (Village 1),Wheat flour,naive,96.67,96.67,False
-Kalobeyei (Village 2),Beans (dry),blend,100.0,99.55442828969173,False
-Kalobeyei (Village 2),Maize,naive,53.33,53.33,False
-Kalobeyei (Village 2),Maize flour,naive,76.67,76.67,False
-Kalobeyei (Village 2),Rice,naive,116.67,116.67,False
-Kalobeyei (Village 2),Salt,naive,58.349999999999994,58.349999999999994,False
-Kalobeyei (Village 2),Sugar,blend,150.0,149.85927029114632,False
-Kalobeyei (Village 2),Wheat flour,naive,83.33,83.33,False
-Kalobeyei (Village 3),Beans (dry),naive,113.33,113.33,False
-Kalobeyei (Village 3),Maize flour,naive,83.33,83.33,False
-Kalobeyei (Village 3),Rice,blend,126.67,126.8254030962253,False
-Kalobeyei (Village 3),Salt,naive,75.0,75.0,False
-Kalobeyei (Village 3),Sugar,naive,155.0,155.0,False
-Kalobeyei (Village 3),Wheat flour,blend,86.67,86.67026766517299,False
-Kilifi,Beans (dry),naive,103.9,103.9,False
-Kilifi,Maize (white),blend,39.9,39.889876898537516,False
-Kitui,Beans (dry),naive,94.0,94.0,False
-Kitui,Maize (white),blend,35.0,35.00334909755539,False
-Lodwar (Turkana),Maize (white),naive,70.0,70.0,False
-Mandera,Maize (white),naive,83.0,83.0,False
-Marigat (Baringo),Beans (dry),blend,117.0,117.47948248401585,False
-Marigat (Baringo),Maize (white),naive,39.0,39.0,False
-Marsabit,Maize (white),naive,44.0,44.0,False
-Mogadishu (Kakuma),Beans (dry),naive,113.33,113.33,False
-Mogadishu (Kakuma),Maize flour,blend,85.0,84.18343781450785,False
-Mogadishu (Kakuma),Rice,blend,120.0,119.92455807052106,False
-Mogadishu (Kakuma),Salt,blend,75.0,74.97643933278783,False
-Mogadishu (Kakuma),Sugar,blend,163.33,163.29729596613296,False
-Nairobi,Bread,naive,112.5,112.5,False
-Kangemi (Nairobi),Maize,naive,50.0,50.0,False
-Kangemi (Nairobi),Maize flour,naive,63.5,63.5,False
-Kangemi (Nairobi),Meat (beef),naive,550.0,550.0,False
-Kangemi (Nairobi),Rice,naive,100.0,100.0,False
-Kangemi (Nairobi),Salt,naive,50.0,50.0,False
-Kangemi (Nairobi),Sugar,naive,112.22,112.22,False
-Kangemi (Nairobi),Wheat flour,naive,70.0,70.0,False
-Kawangware (Nairobi),Maize flour,naive,64.62,64.62,False
-Kawangware (Nairobi),Meat (beef),naive,550.0,550.0,False
-Kawangware (Nairobi),Potatoes (Irish),naive,68.89,68.89,False
-Kawangware (Nairobi),Rice,naive,100.0,100.0,False
-Kawangware (Nairobi),Salt,naive,50.0,50.0,False
-Kawangware (Nairobi),Sugar,naive,112.31,112.31,False
-Kawangware (Nairobi),Wheat flour,naive,69.23,69.23,False
-Kibra (Nairobi),Beans (dry),naive,130.0,130.0,False
-Kibra (Nairobi),Maize,naive,50.0,50.0,False
-Kibra (Nairobi),Maize flour,naive,55.0,55.0,False
-Kibra (Nairobi),Rice,naive,100.0,100.0,False
-Kibra (Nairobi),Salt,naive,50.0,50.0,False
-Kibra (Nairobi),Sorghum,naive,80.0,80.0,False
-Kibra (Nairobi),Sugar,naive,130.0,130.0,False
-Kibra (Nairobi),Wheat flour,naive,67.5,67.5,False
-Mathare (Nairobi),Meat (beef),naive,550.0,550.0,False
-Mukuru (Nairobi),Beans (dry),naive,120.0,120.0,False
-Mukuru (Nairobi),Maize,naive,55.0,55.0,False
-Mukuru (Nairobi),Maize flour,naive,65.0,65.0,False
-Mukuru (Nairobi),Meat (beef),naive,550.0,550.0,False
-Mukuru (Nairobi),Potatoes (Irish),naive,65.0,65.0,True
-Mukuru (Nairobi),Rice,naive,100.0,100.0,False
-Mukuru (Nairobi),Salt,naive,50.0,50.0,False
-Mukuru (Nairobi),Sorghum,naive,80.0,80.0,False
-Mukuru (Nairobi),Sugar,naive,118.85,118.85,False
-Mukuru (Nairobi),Wheat flour,naive,70.0,70.0,False
+market,commodity,latitude,longitude,chosen_forecast,naive_forecast,display_forecast,latest_flagged
+Ethiopia (Kakuma),Beans (dry),3.72,34.85,blend,116.67,116.6707772448331,False
+Ethiopia (Kakuma),Maize,3.72,34.85,blend,56.67,56.64471735948009,False
+Ethiopia (Kakuma),Maize flour,3.72,34.85,naive,90.0,90.0,False
+Ethiopia (Kakuma),Rice,3.72,34.85,naive,130.0,130.0,False
+Ethiopia (Kakuma),Salt,3.72,34.85,naive,75.0,75.0,False
+Ethiopia (Kakuma),Sugar,3.72,34.85,blend,163.33,162.04488525170757,False
+Ethiopia (Kakuma),Wheat flour,3.72,34.85,blend,91.67,91.72030513296039,False
+Garissa,Maize (white),-0.46,39.65,naive,70.0,70.0,False
+Hagadera (Daadab),Beans (dry),0.01,40.37,naive,118.79,118.79,False
+Hagadera (Daadab),Maize,0.01,40.37,naive,60.0,60.0,False
+Hagadera (Daadab),Maize flour,0.01,40.37,naive,98.46,98.46,False
+Hagadera (Daadab),Meat (camel),0.01,40.37,naive,600.0,600.0,False
+Hagadera (Daadab),Meat (goat),0.01,40.37,naive,800.0,800.0,False
+Hagadera (Daadab),Potatoes (Irish),0.01,40.37,naive,64.14,64.14,False
+Hagadera (Daadab),Rice,0.01,40.37,naive,100.88,100.88,False
+Hagadera (Daadab),Salt,0.01,40.37,naive,56.9,56.9,False
+Hagadera (Daadab),Sugar,0.01,40.37,naive,119.71,119.71,False
+Hagadera (Daadab),Wheat flour,0.01,40.37,naive,99.37,99.37,False
+HongKong (Kakuma),Beans (dry),3.75,34.84,blend,143.33,143.79716567747477,False
+HongKong (Kakuma),Maize,3.75,34.84,naive,60.0,60.0,False
+HongKong (Kakuma),Maize flour,3.75,34.84,blend,86.67,86.60464015053343,False
+HongKong (Kakuma),Rice,3.75,34.84,naive,143.33,143.33,False
+HongKong (Kakuma),Salt,3.75,34.84,blend,66.64999999999999,66.63762082299571,False
+HongKong (Kakuma),Sugar,3.75,34.84,blend,160.0,159.2966407602526,False
+HongKong (Kakuma),Wheat flour,3.75,34.84,naive,90.0,90.0,False
+IFO (Daadab),Beans (dry),0.11,40.32,naive,120.5,120.5,False
+IFO (Daadab),Maize,0.11,40.32,blend,68.13,67.90445197676667,False
+IFO (Daadab),Maize flour,0.11,40.32,naive,101.13,101.13,False
+IFO (Daadab),Meat (camel),0.11,40.32,blend,640.97,640.9767328576045,False
+IFO (Daadab),Meat (goat),0.11,40.32,naive,808.94,808.94,False
+IFO (Daadab),Potatoes (Irish),0.11,40.32,blend,65.16,66.13597596114197,False
+IFO (Daadab),Rice,0.11,40.32,naive,117.73,117.73,False
+IFO (Daadab),Salt,0.11,40.32,naive,84.45,84.45,False
+IFO (Daadab),Sugar,0.11,40.32,naive,120.0,120.0,False
+IFO (Daadab),Wheat flour,0.11,40.32,naive,99.95,99.95,False
+Kajiado,Beans (dry),-1.84,36.79,naive,100.0,100.0,False
+Kajiado,Maize (white),-1.84,36.79,blend,53.0,52.88240428195282,False
+Kakuma 2,Beans (dry),3.75,34.82,naive,120.0,120.0,False
+Kakuma 2,Maize,3.75,34.82,naive,56.67,56.67,False
+Kakuma 2,Maize flour,3.75,34.82,naive,78.33,78.33,False
+Kakuma 2,Potatoes (Irish),3.75,34.82,naive,90.0,90.0,False
+Kakuma 2,Rice,3.75,34.82,naive,113.33,113.33,False
+Kakuma 2,Salt,3.75,34.82,naive,75.0,75.0,False
+Kakuma 2,Sugar,3.75,34.82,naive,160.0,160.0,False
+Kakuma 2,Wheat flour,3.75,34.82,naive,83.33,83.33,False
+Kakuma 3,Beans (dry),3.77,34.82,naive,134.44,134.44,False
+Kakuma 3,Maize,3.77,34.82,naive,67.5,67.5,False
+Kakuma 3,Maize flour,3.77,34.82,naive,84.44,84.44,False
+Kakuma 3,Meat (beef),3.77,34.82,naive,550.0,550.0,False
+Kakuma 3,Meat (goat),3.77,34.82,blend,800.0,799.9731871904437,False
+Kakuma 3,Potatoes (Irish),3.77,34.82,blend,80.0,79.86299113416837,False
+Kakuma 3,Rice,3.77,34.82,naive,160.0,160.0,False
+Kakuma 3,Salt,3.77,34.82,naive,75.0,75.0,False
+Kakuma 3,Sugar,3.77,34.82,naive,154.44,154.44,False
+Kakuma 3,Wheat flour,3.77,34.82,naive,91.11,91.11,False
+Kakuma 4,Beans (dry),3.74,34.81,naive,113.33,113.33,False
+Kakuma 4,Maize,3.74,34.81,blend,53.33,52.94415241825684,False
+Kakuma 4,Maize flour,3.74,34.81,naive,80.0,80.0,False
+Kakuma 4,Potatoes (Irish),3.74,34.81,naive,100.0,100.0,False
+Kakuma 4,Rice,3.74,34.81,blend,120.0,120.07044394163424,False
+Kakuma 4,Salt,3.74,34.81,blend,75.0,75.00123492945369,False
+Kakuma 4,Sugar,3.74,34.81,naive,160.0,160.0,False
+Kakuma 4,Wheat flour,3.74,34.81,naive,90.0,90.0,False
+Kalobeyei (Village 1),Beans (dry),3.77,34.73,naive,106.67,106.67,False
+Kalobeyei (Village 1),Maize,3.77,34.73,blend,50.0,50.03318509813674,False
+Kalobeyei (Village 1),Maize flour,3.77,34.73,naive,80.0,80.0,False
+Kalobeyei (Village 1),Potatoes (Irish),3.77,34.73,naive,77.78,77.78,False
+Kalobeyei (Village 1),Rice,3.77,34.73,naive,106.67,106.67,False
+Kalobeyei (Village 1),Salt,3.77,34.73,naive,75.0,75.0,False
+Kalobeyei (Village 1),Sugar,3.77,34.73,naive,150.0,150.0,False
+Kalobeyei (Village 1),Wheat flour,3.77,34.73,naive,96.67,96.67,False
+Kalobeyei (Village 2),Beans (dry),3.76,34.75,blend,100.0,99.52493158902938,False
+Kalobeyei (Village 2),Maize,3.76,34.75,naive,53.33,53.33,False
+Kalobeyei (Village 2),Maize flour,3.76,34.75,naive,76.67,76.67,False
+Kalobeyei (Village 2),Rice,3.76,34.75,blend,116.67,116.63902698289887,False
+Kalobeyei (Village 2),Salt,3.76,34.75,naive,58.349999999999994,58.349999999999994,False
+Kalobeyei (Village 2),Sugar,3.76,34.75,naive,150.0,150.0,False
+Kalobeyei (Village 2),Wheat flour,3.76,34.75,naive,83.33,83.33,False
+Kalobeyei (Village 3),Beans (dry),3.75,34.76,naive,113.33,113.33,False
+Kalobeyei (Village 3),Maize flour,3.75,34.76,naive,83.33,83.33,False
+Kalobeyei (Village 3),Rice,3.75,34.76,blend,126.67,126.31884172699318,False
+Kalobeyei (Village 3),Salt,3.75,34.76,naive,75.0,75.0,False
+Kalobeyei (Village 3),Sugar,3.75,34.76,naive,155.0,155.0,False
+Kalobeyei (Village 3),Wheat flour,3.75,34.76,naive,86.67,86.67,False
+Kilifi,Beans (dry),-3.63,39.85,blend,103.9,103.94790656133839,False
+Kilifi,Maize (white),-3.63,39.85,naive,39.9,39.9,False
+Kitui,Beans (dry),-1.37,38.02,naive,94.0,94.0,False
+Kitui,Maize (white),-1.37,38.02,blend,35.0,34.99836857559377,False
+Lodwar (Turkana),Maize (white),3.12,35.6,naive,70.0,70.0,False
+Mandera,Maize (white),3.94,41.86,naive,83.0,83.0,False
+Marigat (Baringo),Beans (dry),0.46,35.96,blend,117.0,117.1455293017699,False
+Marigat (Baringo),Maize (white),0.46,35.96,naive,39.0,39.0,False
+Marsabit,Maize (white),2.33,37.98,naive,44.0,44.0,False
+Mogadishu (Kakuma),Beans (dry),3.72,34.85,naive,113.33,113.33,False
+Mogadishu (Kakuma),Maize flour,3.72,34.85,blend,85.0,83.60626015665667,False
+Mogadishu (Kakuma),Rice,3.72,34.85,blend,120.0,119.89882629047914,False
+Mogadishu (Kakuma),Salt,3.72,34.85,naive,75.0,75.0,False
+Mogadishu (Kakuma),Sugar,3.72,34.85,naive,163.33,163.33,False
+Nairobi,Bread,-1.28,36.82,naive,112.5,112.5,False
+Kangemi (Nairobi),Maize,-1.27,36.74,naive,50.0,50.0,False
+Kangemi (Nairobi),Maize flour,-1.27,36.74,naive,63.5,63.5,False
+Kangemi (Nairobi),Meat (beef),-1.27,36.74,naive,550.0,550.0,False
+Kangemi (Nairobi),Rice,-1.27,36.74,naive,100.0,100.0,False
+Kangemi (Nairobi),Salt,-1.27,36.74,naive,50.0,50.0,False
+Kangemi (Nairobi),Sugar,-1.27,36.74,naive,112.22,112.22,False
+Kangemi (Nairobi),Wheat flour,-1.27,36.74,naive,70.0,70.0,False
+Kawangware (Nairobi),Maize flour,-1.28,36.74,naive,64.62,64.62,False
+Kawangware (Nairobi),Meat (beef),-1.28,36.74,naive,550.0,550.0,False
+Kawangware (Nairobi),Potatoes (Irish),-1.28,36.74,naive,68.89,68.89,False
+Kawangware (Nairobi),Rice,-1.28,36.74,naive,100.0,100.0,False
+Kawangware (Nairobi),Salt,-1.28,36.74,naive,50.0,50.0,False
+Kawangware (Nairobi),Sugar,-1.28,36.74,naive,112.31,112.31,False
+Kawangware (Nairobi),Wheat flour,-1.28,36.74,naive,69.23,69.23,False
+Kibra (Nairobi),Beans (dry),-1.32,36.78,naive,130.0,130.0,False
+Kibra (Nairobi),Maize,-1.32,36.78,naive,50.0,50.0,False
+Kibra (Nairobi),Maize flour,-1.32,36.78,naive,55.0,55.0,False
+Kibra (Nairobi),Rice,-1.32,36.78,naive,100.0,100.0,False
+Kibra (Nairobi),Salt,-1.32,36.78,naive,50.0,50.0,False
+Kibra (Nairobi),Sorghum,-1.32,36.78,naive,80.0,80.0,False
+Kibra (Nairobi),Sugar,-1.32,36.78,naive,130.0,130.0,False
+Kibra (Nairobi),Wheat flour,-1.32,36.78,naive,67.5,67.5,False
+Mathare (Nairobi),Meat (beef),-1.26,36.86,naive,550.0,550.0,False
+Mukuru (Nairobi),Beans (dry),-1.3,36.88,naive,120.0,120.0,False
+Mukuru (Nairobi),Maize,-1.3,36.88,naive,55.0,55.0,False
+Mukuru (Nairobi),Maize flour,-1.3,36.88,naive,65.0,65.0,False
+Mukuru (Nairobi),Meat (beef),-1.3,36.88,naive,550.0,550.0,False
+Mukuru (Nairobi),Potatoes (Irish),-1.3,36.88,naive,65.0,65.0,True
+Mukuru (Nairobi),Rice,-1.3,36.88,naive,100.0,100.0,False
+Mukuru (Nairobi),Salt,-1.3,36.88,naive,50.0,50.0,False
+Mukuru (Nairobi),Sorghum,-1.3,36.88,naive,80.0,80.0,False
+Mukuru (Nairobi),Sugar,-1.3,36.88,naive,118.85,118.85,False
+Mukuru (Nairobi),Wheat flour,-1.3,36.88,naive,70.0,70.0,False
