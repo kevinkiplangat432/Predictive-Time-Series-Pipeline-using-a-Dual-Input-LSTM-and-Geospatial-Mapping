@@ -210,13 +210,14 @@ def run_pipeline():
     master = add_target(master)
     master = add_lag_features(master, weather_monthly)
 
-    return master, shortlist
+    return master, shortlist, weather_monthly
 
 
 if __name__ == "__main__":
     os.makedirs(DATA_DIR, exist_ok=True)
-    master, shortlist = run_pipeline()
+    master, shortlist, weather_monthly = run_pipeline()
     master.to_parquet(MASTER_PATH, index=False)
     shortlist.to_parquet(SHORTLIST_PATH, index=False)
+    weather_monthly.to_parquet(os.path.join(DATA_DIR, "weather_monthly.parquet"), index=False)
     print(f"\nSaved {MASTER_PATH} ({len(master)} rows)")
     print(f"Saved {SHORTLIST_PATH} ({len(shortlist)} pairs)")

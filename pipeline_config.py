@@ -51,3 +51,5 @@ FORECAST_HORIZON = 1  # months ahead -- the only horizon this system is validate
 
 MIN_HISTORY_FOR_THRESHOLD = 6
 RESIDUAL_STD_MULTIPLIER = 2
+
+WEATHER_MONTHLY_PATH = os.path.join(DATA_DIR, "weather_monthly.parquet")

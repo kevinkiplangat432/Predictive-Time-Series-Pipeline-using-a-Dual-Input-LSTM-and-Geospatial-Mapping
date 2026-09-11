@@ -1,108 +1,183 @@
-import argparse
-import pickle
-from pathlib import Path
-
+import os
+import json
 import numpy as np
 import pandas as pd
+import joblib
+import tensorflow as tf
+from prophet.serialize import model_from_json
 
-MIN_HISTORY_FOR_THRESHOLD = 6
-RESIDUAL_STD_MULTIPLIER = 2
+import data_prep
+from pipeline_config import (
+    WEATHER_FEATURES, FEATURES, LOOKBACK,
+    MIN_HISTORY_FOR_THRESHOLD, RESIDUAL_STD_MULTIPLIER,
+    PROPHET_MODEL_DIR, POOLED_LSTM_PATH, SCALER_DIR, ROUTER_WEIGHTS_PATH,
+    FORECASTS_CSV, PRICE_HISTORY_CSV,
+)
+
+WARNING_THRESHOLDS = [(10, "HIGH"), (5, "MODERATE"), (2, "LOW")]  # checked in order, first match wins
 
 
-def load_inputs(data_dir: Path, model_dir: Path):
-    master = pd.read_parquet(data_dir / "master.parquet")
-    shortlist = pd.read_parquet(data_dir / "shortlist.parquet")
-    selection_results = pd.read_parquet(model_dir / "selection_results.parquet")
+def classify_warning_level(expected_change_pct):
+    if pd.isna(expected_change_pct):
+        return "UNKNOWN"
+    magnitude = abs(expected_change_pct)
+    for threshold, label in WARNING_THRESHOLDS:
+        if magnitude >= threshold:
+            return label
+    return "NORMAL"
 
-    with open(model_dir / "encoders_and_scalers.pkl", "rb") as f:
-        encoders_and_scalers = pickle.load(f)
 
-    return master, shortlist, selection_results, encoders_and_scalers
-
-
-def run_anomaly_detection(master: pd.DataFrame) -> pd.DataFrame:
+def rebuild_anomaly_detection(master):
+    """Identical logic to notebook Section 7 -- expanding, prior-only residual std."""
     master = master.sort_values("date").copy()
-
     master["expected_price"] = master.groupby(["market", "commodity"])["price_per_kg"].shift(1)
     master["residual"] = master["price_per_kg"] - master["expected_price"]
-
-    # expanding std on prior residuals only, shifted so the current row is never included
     master["residual_std_prior"] = master.groupby(["market", "commodity"])["residual"].transform(
         lambda s: s.expanding(min_periods=MIN_HISTORY_FOR_THRESHOLD).std().shift(1)
     )
-
     master["flagged"] = master["residual_std_prior"].notna() & (
         master["residual"].abs() > RESIDUAL_STD_MULTIPLIER * master["residual_std_prior"]
     )
-
     return master
 
 
-def sanity_check_pairs(shortlist: pd.DataFrame, encoders_and_scalers: dict):
-    n_markets_expected = shortlist["market"].nunique()
-    n_commodities_expected = shortlist["commodity"].nunique()
+def load_router_weights():
+    if not os.path.exists(ROUTER_WEIGHTS_PATH):
+        raise FileNotFoundError(f"{ROUTER_WEIGHTS_PATH} not found -- run train_model.py first.")
+    weights = pd.read_csv(ROUTER_WEIGHTS_PATH)
+    return weights.set_index(["market", "commodity"])["weight"].to_dict()
 
-    n_markets_fit = len(encoders_and_scalers["market_encoder"].classes_)
-    n_commodities_fit = len(encoders_and_scalers["commodity_encoder"].classes_)
 
-    if n_markets_fit != n_markets_expected or n_commodities_fit != n_commodities_expected:
-        print(
-            f"Warning, encoder entity counts ({n_markets_fit} markets, "
-            f"{n_commodities_fit} commodities) do not match the current shortlist "
-            f"({n_markets_expected} markets, {n_commodities_expected} commodities). "
-            "Master or shortlist may have changed since train_model.py last ran."
+def get_future_regressors(weather_monthly, market, next_month_start):
+    """Look up already-known rainfall/temperature for a future month's 3/4-month lags."""
+    lookups = {}
+    for lag, name in [(3, "rainfall_lag_3"), (4, "rainfall_lag_4")]:
+        target_month = next_month_start - pd.DateOffset(months=lag)
+        row = weather_monthly[(weather_monthly["market"] == market) & (weather_monthly["date_month"] == target_month)]
+        if row.empty:
+            return None
+        lookups[name] = row["rainfall"].iloc[0]
+    for lag, name in [(3, "temperature_lag_3"), (4, "temperature_lag_4")]:
+        target_month = next_month_start - pd.DateOffset(months=lag)
+        row = weather_monthly[(weather_monthly["market"] == market) & (weather_monthly["date_month"] == target_month)]
+        if row.empty:
+            return None
+        lookups[name] = row["temperature"].iloc[0]
+    return lookups
+
+
+def forecast_prophet_pair(market, commodity, next_month_date, weather_monthly):
+    path = os.path.join(PROPHET_MODEL_DIR, f"{market}__{commodity}.json".replace("/", "-"))
+    if not os.path.exists(path):
+        return None
+
+    next_month_start = next_month_date.replace(day=1)
+    regressors = get_future_regressors(weather_monthly, market, np.datetime64(next_month_start, "M"))
+    if regressors is None:
+        return None
+
+    with open(path) as f:
+        model = model_from_json(f.read())
+
+    future_row = pd.DataFrame([{"ds": next_month_date, **regressors}])
+    forecast = model.predict(future_row)
+    return float(forecast["yhat"].iloc[0])
+
+
+def forecast_lstm_pair(market, commodity, pair_df, pooled_model):
+    scaler_path = os.path.join(SCALER_DIR, f"{market}__{commodity}.joblib".replace("/", "-"))
+    if not os.path.exists(scaler_path):
+        return None
+
+    recent = pair_df.sort_values("date").dropna(subset=FEATURES).tail(LOOKBACK)
+    if len(recent) < LOOKBACK:
+        return None
+
+    scaler = joblib.load(scaler_path)
+    scaled = scaler.transform(recent[FEATURES])
+    X = scaled.reshape(1, LOOKBACK, len(FEATURES))
+
+    predicted_diff_scaled = pooled_model.predict(X, verbose=0).flatten()[0]
+    diff_matrix = np.zeros((1, len(FEATURES)))
+    diff_matrix[:, 0] = predicted_diff_scaled
+    predicted_diff = scaler.inverse_transform(diff_matrix)[0, 0]
+
+    current_price = pair_df.sort_values("date")["price_per_kg"].iloc[-1]
+    return current_price + predicted_diff
+
+
+def build_forecasts(master, shortlist, weather_monthly, router_weights, pooled_model):
+    rows = []
+
+    for _, row in shortlist.iterrows():
+        market, commodity, track = row["market"], row["commodity"], row["model_track"]
+        pair_df = master[(master["market"] == market) & (master["commodity"] == commodity)].sort_values("date")
+        if pair_df.empty:
+            continue
+
+        last_date = pair_df["date"].iloc[-1]
+        next_month_date = last_date + pd.DateOffset(months=1)
+        current_price = pair_df["price_per_kg"].iloc[-1]
+        naive_forecast = current_price
+
+        if track == "prophet":
+            model_forecast = forecast_prophet_pair(market, commodity, next_month_date, weather_monthly)
+        else:
+            model_forecast = forecast_lstm_pair(market, commodity, pair_df, pooled_model)
+
+        weight = router_weights.get((market, commodity), 0.0)
+        model_available = model_forecast is not None
+        if not model_available:
+            weight = 0.0
+
+        display_forecast = (
+            weight * model_forecast + (1 - weight) * naive_forecast if model_available else naive_forecast
+        )
+        chosen_forecast = "model" if weight >= 0.5 else ("blend" if weight > 0 else "naive")
+
+        expected_change_pct = (
+            (display_forecast - current_price) / current_price * 100 if current_price else np.nan
         )
 
+        rows.append({
+            "market": market, "commodity": commodity,
+            "latitude": pair_df["latitude"].iloc[-1], "longitude": pair_df["longitude"].iloc[-1],
+            "model_track": track, "model_available": model_available,
+            "current_price": current_price, "forecast_date": next_month_date.strftime("%Y-%m-%d"),
+            "chosen_forecast": chosen_forecast, "weight": weight,
+            "naive_forecast": naive_forecast, "display_forecast": display_forecast,
+            "expected_change_pct": expected_change_pct,
+            "warning_level": classify_warning_level(expected_change_pct),
+        })
 
-def build_forecasts_csv(selection_results: pd.DataFrame, master: pd.DataFrame) -> pd.DataFrame:
-    latest_flag_per_pair = (
-        master.sort_values("date")
-        .groupby(["market", "commodity"])["flagged"]
-        .last()
-        .reset_index()
-        .rename(columns={"flagged": "latest_flagged"})
-    )
-
-    dashboard_data = selection_results.merge(
-        latest_flag_per_pair, on=["market", "commodity"], how="left"
-    )
-    dashboard_data = dashboard_data.rename(columns={"blended_forecast": "display_forecast"})
-    dashboard_data = dashboard_data[[
-        "market", "commodity", "chosen_forecast", "naive_forecast",
-        "display_forecast", "latest_flagged",
-    ]]
-
-    return dashboard_data
-
-
-def build_price_history_csv(master: pd.DataFrame) -> pd.DataFrame:
-    return master[["market", "commodity", "date", "price_per_kg", "expected_price", "flagged"]].copy()
+    return pd.DataFrame(rows)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate forecasts.csv and price_history.csv for the dashboard.")
-    parser.add_argument("--data-dir", type=Path, default=Path("data"))
-    parser.add_argument("--model-dir", type=Path, default=Path("model"))
-    parser.add_argument("--output-dir", type=Path, default=Path("."))
-    args = parser.parse_args()
+    print("Refreshing data via data_prep.run_pipeline()...")
+    master, shortlist, weather_monthly = data_prep.run_pipeline()
+    master = rebuild_anomaly_detection(master)
 
-    master, shortlist, selection_results, encoders_and_scalers = load_inputs(args.data_dir, args.model_dir)
+    router_weights = load_router_weights()
+    pooled_model = tf.keras.models.load_model(POOLED_LSTM_PATH)
 
-    sanity_check_pairs(shortlist, encoders_and_scalers)
+    forecasts = build_forecasts(master, shortlist, weather_monthly, router_weights, pooled_model)
 
-    master = run_anomaly_detection(master)
+    latest_flag = (
+        master.sort_values("date").groupby(["market", "commodity"])["flagged"].last()
+        .reset_index().rename(columns={"flagged": "latest_flagged"})
+    )
+    forecasts = forecasts.merge(latest_flag, on=["market", "commodity"], how="left")
 
-    eligible_rows = master["residual_std_prior"].notna().sum()
-    flag_rate = master["flagged"].sum() / eligible_rows * 100
-    print(f"Anomaly detection, eligible rows: {eligible_rows}, flagged: {master['flagged'].sum()}, rate: {flag_rate:.1f}%")
+    forecasts.to_csv(FORECASTS_CSV, index=False)
+    print(f"Saved {FORECASTS_CSV} ({len(forecasts)} rows)")
 
-    forecasts = build_forecasts_csv(selection_results, master)
-    forecasts.to_csv(args.output_dir / "forecasts.csv", index=False)
-    print(f"Saved {len(forecasts)} rows to forecasts.csv")
+    price_history = master[["market", "commodity", "date", "price_per_kg", "expected_price", "flagged"]].copy()
+    price_history.to_csv(PRICE_HISTORY_CSV, index=False)
+    print(f"Saved {PRICE_HISTORY_CSV} ({len(price_history)} rows)")
 
-    price_history = build_price_history_csv(master)
-    price_history.to_csv(args.output_dir / "price_history.csv", index=False)
-    print(f"Saved {len(price_history)} rows to price_history.csv")
+    print(f"\nPairs with unavailable model (naive fallback): {(~forecasts['model_available']).sum()}")
+    print(f"Warning level distribution:\n{forecasts['warning_level'].value_counts()}")
 
 
 if __name__ == "__main__":
