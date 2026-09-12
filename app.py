@@ -33,9 +33,7 @@ forecasts, price_history = load_data()
 data_last_updated = price_history["date"].max().strftime("%d %b %Y")
 
 
-# ---------------------------------------------------------------------------
-# Sidebar
-# ---------------------------------------------------------------------------
+
 st.sidebar.markdown("### 🌾 KFPEWS")
 page = st.sidebar.radio(
     "Navigate",
@@ -50,9 +48,7 @@ st.sidebar.info(
 )
 
 
-# ---------------------------------------------------------------------------
-# Shared: market/commodity selector, used by Overview and Price Forecast
-# ---------------------------------------------------------------------------
+
 def pair_selector(key_prefix=""):
     all_markets = sorted(forecasts["market"].unique())
     market = st.selectbox("Select Market", all_markets, key=f"{key_prefix}_market")

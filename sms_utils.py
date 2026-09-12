@@ -22,7 +22,7 @@ WHAT THIS MODULE DOES
 
 4. Sends the SMS via Africa's Talking (the standard, low-friction SMS API
    for Kenya-based projects: it has a free sandbox environment, a simple
-   Python SDK, and no need for international gateway setup) -- or, if no
+   PythoSDKn , and no need for international gateway setup) -- or, if no
    credentials are configured, falls back to Demo Mode automatically, which
    simulates delivery without requiring paid credits or real credentials.
 

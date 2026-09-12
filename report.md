@@ -3,9 +3,7 @@
 ## CRISP-DM Data Report
 
 **Course:** DSF-FT16, Moringa School Data Science Capstone
-**Author:** Kevin
 
----
 
 ## 1. Business / Problem Understanding
 
