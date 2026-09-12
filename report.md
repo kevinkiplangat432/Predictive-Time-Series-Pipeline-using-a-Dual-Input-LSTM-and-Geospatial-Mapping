@@ -117,9 +117,11 @@ An independent per-pair LSTM was also trained as a comparison baseline for the p
 
 Rather than a hard switch between a model's forecast and naive, each pair's production forecast is a **weighted blend**, following Bates and Granger's (1969) forecast-combination result: weight scales with both the strength and the volume of that pair's own validation evidence (`MIN_VAL_ROWS_FOR_ANY_WEIGHT = 4`, full confidence at 8+ validation rows). A pair with thin evidence collapses toward naive by construction; a pair with strong, consistent evidence earns more trust.
 
-In the current run: **99 of 100 Prophet-track pairs trained successfully** (one pair lost all rows to a weather-data gap), and all 33 LSTM-track pairs were included. Across the full 132-pair shortlist: **118 pairs land at zero model weight (pure naive), 14 receive a partial blend, and 0 pairs cross the 0.5 threshold that would mark a pair as fully model-leaning — the highest single-pair weight is 0.477.**
+In the current run: **99 of 100 Prophet-track pairs trained successfully** (one pair lost all rows to a weather-data gap), and all 33 LSTM-track pairs were included. Across the full 132-pair shortlist: **118 pairs land at zero model weight (pure naive), 14 receive a partial blend, and 0 pairs cross the 0.5 threshold** that would mark a pair as fully model-leaning — the highest single-pair weight is 0.477.
 
-*(The precise aggregate "beats naive" percentage on the test set is pending one further aggregation step now that Prophet is genuinely trained per pair for the first time — see Section 5.2.)*
+**93.9% of pairs individually beat or tie naive on the held-out test set** — a real increase from an earlier 83.3% figure computed before Prophet was properly batch-trained. However, the **aggregate mean blended test MAE (6.57) is marginally worse than the aggregate mean naive test MAE (6.55)**. Both figures are genuine and not in conflict: 118 of 132 pairs are exact ties by construction (zero weight), so the 93.9% win rate is dominated by ties rather than clear wins, and a handful of the 14 partially-weighted pairs — likely including the one at 0.477 weight — are wrong by enough on the untouched test set to offset the gains elsewhere in the aggregate average. This is reported as the honest current state of the router, not smoothed over.
+
+
 
 ### 4.3 Anomaly Detection
 
@@ -140,7 +142,7 @@ Expected price for every pair defaults to naive persistence, consistent with the
 
 ### 5.2 Data Mining Criteria Revisited
 
-- **Beats naive, not an arbitrary threshold:** mixed. The pooled LSTM clearly beats naive at the demo-series level and substantially beats an independent per-pair LSTM on short-history pairs. At the full-shortlist, individual-pair level, the validation-weighted router still finds thin evidence for most pairs (118 of 132 at zero weight) — this is reported as a real property of how persistent Kenyan staple prices are month to month, not a modelling shortfall. **One remaining action:** compute the exact blended test-set MAE and beat-rate now that Prophet is trained on all 99 of its pairs, to replace the earlier notebook figure of 83.3% (computed before Prophet was properly batch-trained).
+- **Beats naive, not an arbitrary threshold:** genuinely mixed, now with real evidence rather than an approximation. 93.9% of pairs individually beat or tie naive on the test set — a real improvement now that Prophet is properly trained per pair. But the aggregate mean blended MAE (6.57) is not actually better than the aggregate mean naive MAE (6.55), because a small number of highly-weighted pairs' test-set errors offset the many exact ties. The router is functioning as designed — it stays conservative and rarely commits real weight — but where it does commit weight, that weight isn't yet reliably paying off. This is reported as the current, honest state of the evidence, not resolved by rounding.
 - **Price-weather join, minimal loss:** met — 98.98% match rate.
 - **Anomaly detector, elevated flag rate in real shocks:** met — backtested against three independently documented Kenyan price shocks (2022 Horn of Africa drought, Ukraine-linked grain and fertilizer shock, 2022–2023 fuel subsidy removal). Across 851 pair-months of coverage inside these windows, the detector flagged 235 (**27.6%**) against its own **9.7%** baseline rate — roughly 3x elevation. 154 of 270 shock-pair instances were flagged at least once; 116 saw no flag — this is not perfect recall, but a real, independently checked signal, built with no knowledge of the specific events it was tested against.
 - **Reproducibility:** met — every stochastic step (model initialization, training) is seeded (`SEED = 42`).
@@ -174,7 +176,7 @@ Model artifacts are persisted for reuse without retraining: Prophet models as JS
 
 ### 7.1 What This Project Delivers
 
-Not a system that reliably outperforms naive persistence at forecasting individual market prices — the evidence gathered across three model families says that isn't achievable at this data volume, and that finding is reported honestly rather than obscured. What it does deliver is a validated early-warning system: an anomaly detector with a real, independently backtested signal (27.6% vs. 9.7% flag rate during genuine historical shocks), plus a forecasting pipeline that meaningfully improves on naive specifically where pooling short-history series has room to help.
+Not a system that reliably outperforms naive persistence at forecasting individual market prices — the evidence gathered across three model families says that isn't achievable at this data volume, and that finding is reported honestly rather than obscured. What it does deliver is a validated early-warning system: an anomaly detector with a real, independently backtested signal (27.6% vs. 9.7% flag rate during genuine historical shocks), plus a forecasting router that individually ties or beats naive on 93.9% of pairs while still not producing a net aggregate improvement — evidence that pooling and per-pair Prophet training both help at the margins, without yet adding up to a system that reliably outperforms simply carrying the last observed price forward.
 
 ### 7.2 Recommendations for Future Work
 

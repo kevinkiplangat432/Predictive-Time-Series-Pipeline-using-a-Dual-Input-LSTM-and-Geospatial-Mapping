@@ -69,7 +69,7 @@ def create_sequences(data, lookback):
 
 
 def train_prophet_pair(pair_df):
-    """Validation pass for one prophet-track pair. Returns metrics needed for the router."""
+    """Validation pass for one prophet-track pair. Returns metrics + raw test arrays for blending."""
     data = pair_df[["date", "price_per_kg"] + WEATHER_FEATURES].dropna()
     data = data.rename(columns={"date": "ds", "price_per_kg": "y"})
     if len(data) < MIN_ROWS:
@@ -87,9 +87,6 @@ def train_prophet_pair(pair_df):
     val_forecast = model.predict(val[["ds"] + WEATHER_FEATURES])
     val_mae = mean_absolute_error(val["y"].to_numpy(), val_forecast["yhat"].to_numpy())
 
-    # naive baseline, windowed to match exactly -- computed on the full price
-    # series (not the weather-dropna'd `data`) so the previous-month lookup
-    # at the train/val boundary is correct, then restricted to each window
     full_series = pair_df.sort_values("date")[["date", "price_per_kg"]].copy()
     full_series["naive_pred"] = full_series["price_per_kg"].shift(1)
 
@@ -101,29 +98,34 @@ def train_prophet_pair(pair_df):
         if not val_window.empty else np.nan
     )
 
-    test_mae, test_mape = (np.nan, np.nan)
+    test_mae, test_mape = np.nan, np.nan
+    test_actual, test_model_pred, test_naive_pred = None, None, None
     if not test.empty:
         test_forecast = model.predict(test[["ds"] + WEATHER_FEATURES])
         test_actual = test["y"].to_numpy()
-        test_pred = test_forecast["yhat"].to_numpy()
-        test_mae = mean_absolute_error(test_actual, test_pred)
+        test_model_pred = test_forecast["yhat"].to_numpy()
+        test_mae = mean_absolute_error(test_actual, test_model_pred)
         nz = test_actual != 0
-        test_mape = np.mean(np.abs((test_actual[nz] - test_pred[nz]) / test_actual[nz])) * 100
+        test_mape = np.mean(np.abs((test_actual[nz] - test_model_pred[nz]) / test_actual[nz])) * 100
 
-    test_window = full_series[full_series["date"] > val["ds"].max()].dropna(subset=["naive_pred"])
-    if test_window.empty:
-        naive_test_mae, naive_test_mape = np.nan, np.nan
-    else:
-        naive_test_mae = mean_absolute_error(test_window["price_per_kg"], test_window["naive_pred"])
-        nz = test_window["price_per_kg"] != 0
+        # naive prediction aligned to the exact same test dates the model was scored on
+        naive_lookup = full_series.set_index("date")["naive_pred"]
+        test_naive_pred = test["ds"].map(naive_lookup).to_numpy()
+
+    naive_test_mae, naive_test_mape = np.nan, np.nan
+    if test_naive_pred is not None and not pd.isna(test_naive_pred).all():
+        valid = ~pd.isna(test_naive_pred)
+        naive_test_mae = mean_absolute_error(test_actual[valid], test_naive_pred[valid])
+        nz = test_actual[valid] != 0
         naive_test_mape = np.mean(np.abs(
-            (test_window["price_per_kg"][nz] - test_window["naive_pred"][nz]) / test_window["price_per_kg"][nz]
+            (test_actual[valid][nz] - test_naive_pred[valid][nz]) / test_actual[valid][nz]
         )) * 100
 
     return {
         "val_rows": len(val), "val_mae": val_mae, "val_naive_mae": val_naive_mae,
         "test_mae": test_mae, "test_mape": test_mape,
         "naive_test_mae": naive_test_mae, "naive_test_mape": naive_test_mape,
+        "test_actual": test_actual, "test_model_pred": test_model_pred, "test_naive_pred": test_naive_pred,
     }
 
 def fit_final_prophet(pair_df, market, commodity):
@@ -155,10 +157,27 @@ def run_prophet_track(master, shortlist):
         weight = compute_model_weight(metrics["val_rows"], metrics["val_naive_mae"], metrics["val_mae"])
         fit_final_prophet(pair_df, row["market"], row["commodity"])
 
+        blended_test_mae, blended_test_mape, beats_naive = np.nan, np.nan, np.nan
+        test_actual, test_model_pred, test_naive_pred = metrics["test_actual"], metrics["test_model_pred"], metrics["test_naive_pred"]
+        if test_actual is not None and test_naive_pred is not None:
+            valid = ~pd.isna(test_naive_pred)
+            if valid.any():
+                blended_pred = weight * test_model_pred[valid] + (1 - weight) * test_naive_pred[valid]
+                blended_test_mae = mean_absolute_error(test_actual[valid], blended_pred)
+                nz = test_actual[valid] != 0
+                blended_test_mape = np.mean(np.abs(
+                    (test_actual[valid][nz] - blended_pred[nz]) / test_actual[valid][nz]
+                )) * 100
+                beats_naive = blended_test_mae <= metrics["naive_test_mae"]
+
         results.append({
             "market": row["market"], "commodity": row["commodity"], "model_track": "prophet",
-            "weight": weight, **{k: v for k, v in metrics.items() if k != "val_rows"},
-            "val_rows": metrics["val_rows"],
+            "weight": weight, "val_rows": metrics["val_rows"],
+            "val_mae": metrics["val_mae"], "val_naive_mae": metrics["val_naive_mae"],
+            "test_mae": metrics["test_mae"], "test_mape": metrics["test_mape"],
+            "naive_test_mae": metrics["naive_test_mae"], "naive_test_mape": metrics["naive_test_mape"],
+            "blended_test_mae": blended_test_mae, "blended_test_mape": blended_test_mape,
+            "beats_naive": beats_naive,
         })
 
     print(f"Prophet track: {len(results)} of {len(prophet_pairs)} pairs trained")
@@ -292,11 +311,22 @@ def run_lstm_track(master, shortlist):
 
         weight = compute_model_weight(val_rows_mask.sum(), bundle["val_naive_mae"], val_mae)
 
+        blended_test_mae, blended_test_mape, beats_naive = np.nan, np.nan, np.nan
+        if test_rows_mask.sum() > 0:
+            naive_pred_test = last_price_test_all[test_rows_mask]
+            blended_pred = weight * test_pred + (1 - weight) * naive_pred_test
+            blended_test_mae = mean_absolute_error(actual, blended_pred)
+            nz = actual != 0
+            blended_test_mape = np.mean(np.abs((actual[nz] - blended_pred[nz]) / actual[nz])) * 100
+            beats_naive = blended_test_mae <= bundle["test_naive_mae"]
+
         results.append({
             "market": bundle["market"], "commodity": bundle["commodity"], "model_track": "lstm",
             "weight": weight, "val_rows": val_rows_mask.sum(), "val_mae": val_mae, "val_naive_mae": bundle["val_naive_mae"],
             "test_mae": test_mae, "test_mape": test_mape,
             "naive_test_mae": bundle["test_naive_mae"], "naive_test_mape": np.nan,
+            "blended_test_mae": blended_test_mae, "blended_test_mape": blended_test_mape,
+            "beats_naive": beats_naive,
         })
 
     return pd.DataFrame(results), lstm_pairs
@@ -348,6 +378,10 @@ def main():
 
     router_weights = pd.concat([prophet_results, lstm_results], ignore_index=True)
     router_weights.to_csv(ROUTER_WEIGHTS_PATH, index=False)
+    valid_results = router_weights.dropna(subset=["blended_test_mae", "naive_test_mae"])
+    print(f"\nOverall mean blended test MAE: {valid_results['blended_test_mae'].mean():.2f}")
+    print(f"Overall mean naive test MAE: {valid_results['naive_test_mae'].mean():.2f}")
+    print(f"Pairs at or better than naive: {valid_results['beats_naive'].mean() * 100:.1f}%")
 
     print(f"\nRouter weights saved: {ROUTER_WEIGHTS_PATH}")
     print(f"Pairs with zero weight: {(router_weights['weight'] == 0).sum()}")
