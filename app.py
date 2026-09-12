@@ -751,13 +751,7 @@ elif page == "SMS Alerts":
 # --------------------------------------------------------------------------
 
 elif page == "Reports & Export":
-    st.markdown("### Export data")
-    st.download_button(
-        "Download price history + anomaly flags (CSV)",
-        data=price_history.to_csv(index=False).encode("utf-8"),
-        file_name="price_history_export.csv", mime="text/csv",
-    )
-    st.download_button(
+    st.markdown("### Export data"
         "Download forecasts + flags (CSV)",
         data=forecasts.to_csv(index=False).encode("utf-8"),
         file_name="forecasts_export.csv", mime="text/csv",
