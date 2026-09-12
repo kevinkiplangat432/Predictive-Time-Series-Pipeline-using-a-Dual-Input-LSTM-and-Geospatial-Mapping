@@ -49,20 +49,18 @@ def load_router_weights():
 
 
 def get_future_regressors(weather_monthly, market, next_month_start):
-    """Look up already-known rainfall/temperature for a future month's 3/4-month lags."""
+    """next_month_start: a pandas Timestamp for the 1st of the month being forecast."""
+    lag_specs = [
+        (3, "rainfall_lag_3", "rainfall"), (4, "rainfall_lag_4", "rainfall"),
+        (3, "temperature_lag_3", "temperature"), (4, "temperature_lag_4", "temperature"),
+    ]
     lookups = {}
-    for lag, name in [(3, "rainfall_lag_3"), (4, "rainfall_lag_4")]:
-        target_month = next_month_start - pd.DateOffset(months=lag)
+    for lag, feature_name, source_col in lag_specs:
+        target_month = np.datetime64(next_month_start - pd.DateOffset(months=lag), "M")
         row = weather_monthly[(weather_monthly["market"] == market) & (weather_monthly["date_month"] == target_month)]
         if row.empty:
             return None
-        lookups[name] = row["rainfall"].iloc[0]
-    for lag, name in [(3, "temperature_lag_3"), (4, "temperature_lag_4")]:
-        target_month = next_month_start - pd.DateOffset(months=lag)
-        row = weather_monthly[(weather_monthly["market"] == market) & (weather_monthly["date_month"] == target_month)]
-        if row.empty:
-            return None
-        lookups[name] = row["temperature"].iloc[0]
+        lookups[feature_name] = row[source_col].iloc[0]
     return lookups
 
 
@@ -72,7 +70,7 @@ def forecast_prophet_pair(market, commodity, next_month_date, weather_monthly):
         return None
 
     next_month_start = next_month_date.replace(day=1)
-    regressors = get_future_regressors(weather_monthly, market, np.datetime64(next_month_start, "M"))
+    regressors = get_future_regressors(weather_monthly, market, next_month_start)
     if regressors is None:
         return None
 
@@ -81,7 +79,11 @@ def forecast_prophet_pair(market, commodity, next_month_date, weather_monthly):
 
     future_row = pd.DataFrame([{"ds": next_month_date, **regressors}])
     forecast = model.predict(future_row)
-    return float(forecast["yhat"].iloc[0])
+    return {
+        "point": float(forecast["yhat"].iloc[0]),
+        "lower": float(forecast["yhat_lower"].iloc[0]),
+        "upper": float(forecast["yhat_upper"].iloc[0]),
+    }
 
 
 def forecast_lstm_pair(market, commodity, pair_df, pooled_model):
@@ -121,9 +123,13 @@ def build_forecasts(master, shortlist, weather_monthly, router_weights, pooled_m
         naive_forecast = current_price
 
         if track == "prophet":
-            model_forecast = forecast_prophet_pair(market, commodity, next_month_date, weather_monthly)
+            prophet_result = forecast_prophet_pair(market, commodity, next_month_date, weather_monthly)
+            model_forecast = prophet_result["point"] if prophet_result else None
+            forecast_lower = prophet_result["lower"] if prophet_result else np.nan
+            forecast_upper = prophet_result["upper"] if prophet_result else np.nan
         else:
             model_forecast = forecast_lstm_pair(market, commodity, pair_df, pooled_model)
+            forecast_lower, forecast_upper = np.nan, np.nan
 
         weight = router_weights.get((market, commodity), 0.0)
         model_available = model_forecast is not None

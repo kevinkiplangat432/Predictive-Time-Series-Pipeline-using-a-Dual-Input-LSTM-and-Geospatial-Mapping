@@ -193,7 +193,6 @@ def add_lag_features(master, weather_monthly):
     return master
 
 def run_pipeline():
-    """Run the full Data Preparation + Feature Engineering pipeline. Returns (master, shortlist)."""
     prices_raw = load_food_prices()
     prices = clean_price_data(prices_raw)
     prices = standardize_units(prices)
@@ -205,6 +204,7 @@ def run_pipeline():
     market_coords = modeling_data[["market", "latitude", "longitude"]].drop_duplicates()
     weather_all = retrieve_weather(market_coords)
     weather_monthly = aggregate_weather_monthly(weather_all)
+    weather_monthly["date_month"] = weather_monthly["date"].values.astype("datetime64[M]")
 
     master = merge_base_weather(modeling_data, weather_monthly)
     master = add_target(master)

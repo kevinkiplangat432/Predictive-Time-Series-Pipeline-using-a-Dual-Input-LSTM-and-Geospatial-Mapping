@@ -85,27 +85,46 @@ def train_prophet_pair(pair_df):
     model.fit(train)
 
     val_forecast = model.predict(val[["ds"] + WEATHER_FEATURES])
-    val_mae = mean_absolute_error(val["y"], val_forecast["yhat"])
+    val_mae = mean_absolute_error(val["y"].to_numpy(), val_forecast["yhat"].to_numpy())
 
-    val_naive_mae, _ = naive_metrics(
-        pair_df[pair_df["date"] <= val["ds"].max()].rename(columns={"date": "ds"}).assign(price_per_kg=lambda d: d["price_per_kg"])
+    # naive baseline, windowed to match exactly -- computed on the full price
+    # series (not the weather-dropna'd `data`) so the previous-month lookup
+    # at the train/val boundary is correct, then restricted to each window
+    full_series = pair_df.sort_values("date")[["date", "price_per_kg"]].copy()
+    full_series["naive_pred"] = full_series["price_per_kg"].shift(1)
+
+    val_window = full_series[
+        (full_series["date"] > train["ds"].max()) & (full_series["date"] <= val["ds"].max())
+    ].dropna(subset=["naive_pred"])
+    val_naive_mae = (
+        mean_absolute_error(val_window["price_per_kg"], val_window["naive_pred"])
+        if not val_window.empty else np.nan
     )
 
     test_mae, test_mape = (np.nan, np.nan)
     if not test.empty:
         test_forecast = model.predict(test[["ds"] + WEATHER_FEATURES])
-        test_mae = mean_absolute_error(test["y"], test_forecast["yhat"])
-        nz = test["y"] != 0
-        test_mape = np.mean(np.abs((test["y"][nz] - test_forecast["yhat"][nz]) / test["y"][nz])) * 100
+        test_actual = test["y"].to_numpy()
+        test_pred = test_forecast["yhat"].to_numpy()
+        test_mae = mean_absolute_error(test_actual, test_pred)
+        nz = test_actual != 0
+        test_mape = np.mean(np.abs((test_actual[nz] - test_pred[nz]) / test_actual[nz])) * 100
 
-    naive_test_mae, naive_test_mape = naive_metrics(pair_df.rename(columns={"date": "date"}))
+    test_window = full_series[full_series["date"] > val["ds"].max()].dropna(subset=["naive_pred"])
+    if test_window.empty:
+        naive_test_mae, naive_test_mape = np.nan, np.nan
+    else:
+        naive_test_mae = mean_absolute_error(test_window["price_per_kg"], test_window["naive_pred"])
+        nz = test_window["price_per_kg"] != 0
+        naive_test_mape = np.mean(np.abs(
+            (test_window["price_per_kg"][nz] - test_window["naive_pred"][nz]) / test_window["price_per_kg"][nz]
+        )) * 100
 
     return {
         "val_rows": len(val), "val_mae": val_mae, "val_naive_mae": val_naive_mae,
         "test_mae": test_mae, "test_mape": test_mape,
         "naive_test_mae": naive_test_mae, "naive_test_mape": naive_test_mape,
     }
-
 
 def fit_final_prophet(pair_df, market, commodity):
     """Refit on the pair's full history and save as JSON."""
