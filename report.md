@@ -1,3 +1,4 @@
+<!--markdownlint-disable-->
 # Kenya Food Price Early Warning System
 ## CRISP-DM Data Report
 
