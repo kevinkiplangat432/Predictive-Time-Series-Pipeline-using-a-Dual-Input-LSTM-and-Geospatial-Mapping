@@ -13,6 +13,20 @@ CUSTOM_CSS = """
 <style>
 html, body, [class*="css"] { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
 .stApp { background-color: #F8FAFC; }
+[data-testid="stAppViewContainer"] {
+    color: #0F172A;
+}
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] li,
+[data-testid="stAppViewContainer"] span,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] h4,
+[data-testid="stMarkdownContainer"] {
+    color: #0F172A !important;
+}
 
 /* Sidebar shell */
 [data-testid="stSidebar"] {
