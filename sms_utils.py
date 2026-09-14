@@ -1,20 +1,44 @@
 """
 sms_utils.py
 ------------
-Helper functions for sending SMS alerts via Africa's Talking.
+SMS Early Warning Notification module for KFPEWS.
 
-Works in two modes:
-  - SANDBOX (default): free, no real charges. SMS only actually reaches a
-    phone if that phone number has been registered in the Africa's Talking
-    Simulator (Sandbox app -> Simulator tab).
-  - LIVE: real SMS, real cost. Requires a Live account + approved sender.
+This module is intentionally kept separate from app.py so the SMS feature
+is modular and can be tested, edited, or swapped out without touching the
+forecasting/anomaly dashboard code.
 
-Usage from app.py:
-    from sms_utils import init_sms, load_stakeholders, build_alert_message, send_alerts
+WHAT THIS MODULE DOES
+----------------------
+1. Classifies an alert (HIGH_PRICE / LOW_PRICE / ANOMALY / None) using ONLY
+   the existing data your notebook already produces:
+       - price_history.csv -> flagged  (the residual-based anomaly detector)
+       - forecasts.csv     -> display_forecast, naive_forecast, chosen_forecast
+   No new prediction method is introduced here.
 
-    sms_client = init_sms(username, api_key)
-    stakeholders = load_stakeholders("stakeholders.csv")
-    log_df = send_alerts(sms_client, stakeholders, flagged_forecasts_df)
+2. Builds the SMS text for each alert type, in the same style as the
+   examples in the project brief.
+
+3. Validates and normalizes Kenyan phone numbers.
+
+4. Sends the SMS via Africa's Talking (the standard, low-friction SMS API
+   for Kenya-based projects: it has a free sandbox environment, a simple
+   Python SDK, and no need for international gateway setup) -- or, if no
+   credentials are configured, falls back to Demo Mode automatically, which
+   simulates delivery without requiring paid credits or real credentials.
+
+5. Keeps a simple alert history (CSV) with de-duplication, so the same
+   market/commodity/alert_type/month doesn't spam the same stakeholder.
+
+CONFIGURATION (environment variables - never hard-code credentials)
+---------------------------------------------------------------------
+    SMS_API_KEY     - Africa's Talking API key
+    SMS_USERNAME    - Africa's Talking username ("sandbox" for the free
+                       sandbox environment)
+    SMS_SENDER_ID   - optional alphanumeric sender/shortcode ID
+
+If SMS_API_KEY or SMS_USERNAME are not set, send_sms() automatically runs
+in Demo Mode regardless of what the caller asks for, and clearly reports
+that in the returned status.
 """
 
 import africastalking

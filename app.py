@@ -12,12 +12,103 @@ WARNING_COLORS = {"HIGH": "#DC2626", "MODERATE": "#F59E0B", "LOW": "#16A34A", "N
 
 CUSTOM_CSS = """
 <style>
-[data-testid="stSidebar"] { background-color: #0B1120; }
-[data-testid="stSidebar"] * { color: #E5E7EB !important; }
-div[data-testid="stMetric"] {
-    background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 10px;
-    padding: 14px 16px;
+html, body, [class*="css"] { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+.stApp { background-color: #F8FAFC; }
+
+/* Sidebar shell */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0B1120 0%, #0F172A 100%);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    padding-top: 0.5rem;
 }
+[data-testid="stSidebar"] * { color: #CBD5E1 !important; }
+[data-testid="stSidebar"] h3 {
+    color: #FFFFFF !important;
+    font-size: 1.05rem;
+    padding: 0.5rem 0.75rem 1rem 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 0.75rem;
+}
+
+/* Thin nav-style radio list, styled as pills rather than radio buttons */
+[data-testid="stSidebar"] div[role="radiogroup"] { gap: 2px; }
+[data-testid="stSidebar"] div[role="radiogroup"] label {
+    display: flex;
+    align-items: center;
+    padding: 9px 12px;
+    margin: 0 0.5rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.08);
+}
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {
+    background: rgba(34,197,94,0.12);
+    border-left: 3px solid #22C55E;
+    color: #FFFFFF !important;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none; }
+
+/* Metric cards */
+div[data-testid="stMetric"] {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+div[data-testid="stMetric"]:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+div[data-testid="stMetricLabel"] {
+    font-size: 0.78rem;
+    color: #64748B;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+div[data-testid="stMetricValue"] { font-size: 1.4rem; color: #0F172A; }
+
+/* Buttons: bordered, fill on hover */
+.stButton > button, .stDownloadButton > button {
+    border: 1.5px solid #2563EB;
+    color: #2563EB;
+    background-color: transparent;
+    border-radius: 8px;
+    padding: 0.45rem 1.1rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+.stButton > button:hover, .stDownloadButton > button:hover {
+    background-color: #2563EB;
+    color: #FFFFFF;
+    border-color: #2563EB;
+}
+
+/* Selectboxes */
+div[data-baseweb="select"] > div { border-radius: 8px; border-color: #E2E8F0; }
+
+/* Dataframes */
+[data-testid="stDataFrame"] { border: 1px solid #E2E8F0; border-radius: 10px; overflow: hidden; }
+
+/* Dividers */
+hr { margin: 0.6rem 0 1.2rem 0; border-color: #E2E8F0; }
+
+/* Alerts */
+div[data-testid="stAlert"] { border-radius: 10px; border: 1px solid rgba(0,0,0,0.04); }
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -34,6 +125,7 @@ forecasts, price_history = load_data()
 data_last_updated = price_history["date"].max().strftime("%d %b %Y")
 
 
+<<<<<<< HEAD
 # ---------------------------------------------------------------------------
 # SMS client setup (sandbox by default — see README / secrets.toml)
 # ---------------------------------------------------------------------------
@@ -68,6 +160,9 @@ sms_client, sms_is_mock = get_sms_client()
 # ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
+=======
+
+>>>>>>> c5546d6249a4a1419d67e2225c630414595cb31b
 st.sidebar.markdown("### 🌾 KFPEWS")
 page = st.sidebar.radio(
     "Navigate",
@@ -87,9 +182,7 @@ else:
     st.sidebar.success("SMS alerts ready (sandbox mode unless configured otherwise).")
 
 
-# ---------------------------------------------------------------------------
-# Shared: market/commodity selector, used by Overview and Price Forecast
-# ---------------------------------------------------------------------------
+
 def pair_selector(key_prefix=""):
     all_markets = sorted(forecasts["market"].unique())
     market = st.selectbox("Select Market", all_markets, key=f"{key_prefix}_market")
@@ -234,6 +327,7 @@ def render_decision_support(row):
     st.warning("These are general observations, not individualized recommendations. Please weigh your own circumstances before acting.")
 
 
+<<<<<<< HEAD
 # ---------------------------------------------------------------------------
 # Shared: SMS demo/send widget, used on the Early Warnings page
 # ---------------------------------------------------------------------------
@@ -301,6 +395,9 @@ def render_sms_notify_section(flagged_df):
 # ---------------------------------------------------------------------------
 # Page: Overview
 # ---------------------------------------------------------------------------
+=======
+
+>>>>>>> c5546d6249a4a1419d67e2225c630414595cb31b
 def page_overview():
     header_col1, header_col2 = st.columns([3, 1])
     with header_col1:
