@@ -1,10 +1,9 @@
+
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
-
-from sms_utils import init_sms, load_stakeholders, demo_stakeholder, send_alerts, MockSMSClient
 
 st.set_page_config(page_title="Kenya Food Price Early Warning System", layout="wide", page_icon="🌾")
 
@@ -14,6 +13,7 @@ CUSTOM_CSS = """
 <style>
 html, body, [class*="css"] { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
 .stApp { background-color: #F8FAFC; }
+
 [data-testid="stAppViewContainer"] {
     color: #0F172A;
 }
@@ -139,44 +139,7 @@ forecasts, price_history = load_data()
 data_last_updated = price_history["date"].max().strftime("%d %b %Y")
 
 
-<<<<<<< HEAD
-# ---------------------------------------------------------------------------
-# SMS client setup (sandbox by default — see README / secrets.toml)
-# ---------------------------------------------------------------------------
-@st.cache_resource
-def get_sms_client():
-    """
-    Reads credentials from .streamlit/secrets.toml:
 
-        [africastalking]
-        username = "sandbox"
-        api_key = "YOUR_SANDBOX_API_KEY"
-
-    Returns a tuple (client, is_mock):
-      - Real Africa's Talking client + is_mock=False, if valid credentials are found
-        and the key is not still the placeholder text.
-      - MockSMSClient + is_mock=True, if no credentials are configured yet. This lets
-        the SMS feature be demoed (UI, flow, delivery log) without a real account.
-    """
-    try:
-        username = st.secrets["africastalking"]["username"]
-        api_key = st.secrets["africastalking"]["api_key"]
-        if not api_key or "PASTE_YOUR" in api_key.upper():
-            raise ValueError("Placeholder API key detected")
-        return init_sms(username, api_key), False
-    except Exception:
-        return MockSMSClient(), True
-
-
-sms_client, sms_is_mock = get_sms_client()
-
-
-# ---------------------------------------------------------------------------
-# Sidebar
-# ---------------------------------------------------------------------------
-=======
-
->>>>>>> c5546d6249a4a1419d67e2225c630414595cb31b
 st.sidebar.markdown("### 🌾 KFPEWS")
 page = st.sidebar.radio(
     "Navigate",
@@ -189,11 +152,6 @@ st.sidebar.info(
     "This system uses food price data from WFP and weather data from NASA POWER "
     "to forecast prices and generate early warnings."
 )
-
-if sms_is_mock:
-    st.sidebar.warning("SMS running in MOCK mode (demo only) — add real africastalking credentials to secrets.toml for actual sending.")
-else:
-    st.sidebar.success("SMS alerts ready (sandbox mode unless configured otherwise).")
 
 
 
@@ -324,94 +282,24 @@ def render_decision_support(row):
     increasing = row["model_available"] and row["expected_change_pct"] > 2
 
     with col1:
-        st.markdown("**📦 For Farmers**")
+        st.markdown("**For Farmers**")
         if increasing:
             st.write("Prices are expected to rise. If safe storage is available, holding part of your stock may be worth considering. Avoid distress selling.")
         else:
             st.write("No strong upward signal currently. Normal selling decisions apply based on your own circumstances.")
 
     with col2:
-        st.markdown("**🏬 Storage Consideration**")
+        st.markdown("**Storage Consideration**")
         st.write("If affordable, safe storage is available, delaying sale of surplus stock can help you benefit from favorable price movement, when one is expected.")
 
     with col3:
-        st.markdown("**💰 Financial Support**")
+        st.markdown("**Financial Support**")
         st.write("If you face cash-flow pressure, explore available financial support options before selling all stock immediately at the current price.")
 
     st.warning("These are general observations, not individualized recommendations. Please weigh your own circumstances before acting.")
 
 
-<<<<<<< HEAD
-# ---------------------------------------------------------------------------
-# Shared: SMS demo/send widget, used on the Early Warnings page
-# ---------------------------------------------------------------------------
-def render_sms_notify_section(flagged_df):
-    st.divider()
-    st.subheader("📲 Notify Stakeholders via SMS")
 
-    if sms_is_mock:
-        st.info(
-            "🎭 **Mock mode** — no real Africa's Talking account is connected yet. "
-            "Sends below are simulated for demonstration only; no real SMS goes out. "
-            "Add real credentials to `.streamlit/secrets.toml` to send actual messages."
-        )
-
-    demo_mode = st.checkbox(
-        "🧪 Demo mode (send only to a test number, not real stakeholders)",
-        value=True,
-        help="Keep this ON while testing. Sandbox mode never sends real SMS or incurs cost "
-             "unless the destination number is registered in the Africa's Talking Simulator.",
-    )
-
-    consolidated = st.checkbox(
-        "Send one consolidated message per stakeholder (recommended)",
-        value=True,
-        help="Off = one SMS per flagged pair per stakeholder, which can get expensive/spammy "
-             "fast if many pairs are flagged.",
-    )
-
-    if demo_mode:
-        demo_phone = st.text_input(
-            "Test phone number (must be registered in the AT Simulator to actually receive it)",
-            value="+254712345678",
-        )
-        stakeholders_to_use = demo_stakeholder(demo_phone)
-        st.caption(f"Demo will send to 1 test number: {demo_phone}")
-    else:
-        try:
-            stakeholders_to_use = load_stakeholders("stakeholders.csv")
-            st.caption(f"{len(stakeholders_to_use)} real stakeholders loaded from stakeholders.csv")
-        except Exception as e:
-            st.error(f"Could not load stakeholders.csv: {e}")
-            return
-
-    st.write(f"**{len(flagged_df)}** pair(s) currently flagged will be included in the alert.")
-
-    if st.button("Send SMS alert now"):
-        with st.spinner("Sending SMS..."):
-            log_df = send_alerts(
-                sms_client, stakeholders_to_use, flagged_df,
-                consolidated=consolidated,
-            )
-        sent = (log_df["status"] == "sent").sum()
-        if sms_is_mock:
-            st.success(f"{sent}/{len(log_df)} message(s) simulated successfully (mock mode — nothing was actually sent).")
-        else:
-            st.success(f"{sent}/{len(log_df)} message(s) sent successfully.")
-        st.dataframe(log_df, use_container_width=True, hide_index=True)
-        if demo_mode and not sms_is_mock:
-            st.info(
-                "Sandbox mode: no real charge was made. If your number is registered in the "
-                "Africa's Talking Simulator, check your phone for the message."
-            )
-
-
-# ---------------------------------------------------------------------------
-# Page: Overview
-# ---------------------------------------------------------------------------
-=======
-
->>>>>>> c5546d6249a4a1419d67e2225c630414595cb31b
 def page_overview():
     header_col1, header_col2 = st.columns([3, 1])
     with header_col1:
@@ -457,9 +345,6 @@ def page_overview():
     render_decision_support(row)
 
 
-# ---------------------------------------------------------------------------
-# Page: Price Forecast (deeper single-pair view)
-# ---------------------------------------------------------------------------
 def page_price_forecast():
     st.title("Price Forecast")
     market, commodity = pair_selector("forecast")
@@ -488,9 +373,7 @@ def page_price_forecast():
         st.info("This pair uses the pooled LSTM. Confidence bounds aren't available for this model track — point forecast only.")
 
 
-# ---------------------------------------------------------------------------
-# Page: Early Warnings
-# ---------------------------------------------------------------------------
+
 def page_early_warnings():
     st.title("Early Warnings")
     st.caption("Pairs where the current price is flagged as outside its own normal historical range.")
@@ -511,12 +394,7 @@ def page_early_warnings():
         "(27.6% flag rate during shock windows vs. a 9.7% baseline). See About for details."
     )
 
-    render_sms_notify_section(flagged)
 
-
-# ---------------------------------------------------------------------------
-# Page: Markets Monitor
-# ---------------------------------------------------------------------------
 def page_markets_monitor():
     st.title("Markets Monitor")
 
