@@ -1,9 +1,10 @@
-
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
+
+from sms_utils import init_sms, load_stakeholders, demo_stakeholder, send_alerts, MockSMSClient
 
 st.set_page_config(page_title="Kenya Food Price Early Warning System", layout="wide", page_icon="🌾")
 
@@ -138,7 +139,44 @@ forecasts, price_history = load_data()
 data_last_updated = price_history["date"].max().strftime("%d %b %Y")
 
 
+<<<<<<< HEAD
+# ---------------------------------------------------------------------------
+# SMS client setup (sandbox by default — see README / secrets.toml)
+# ---------------------------------------------------------------------------
+@st.cache_resource
+def get_sms_client():
+    """
+    Reads credentials from .streamlit/secrets.toml:
 
+        [africastalking]
+        username = "sandbox"
+        api_key = "YOUR_SANDBOX_API_KEY"
+
+    Returns a tuple (client, is_mock):
+      - Real Africa's Talking client + is_mock=False, if valid credentials are found
+        and the key is not still the placeholder text.
+      - MockSMSClient + is_mock=True, if no credentials are configured yet. This lets
+        the SMS feature be demoed (UI, flow, delivery log) without a real account.
+    """
+    try:
+        username = st.secrets["africastalking"]["username"]
+        api_key = st.secrets["africastalking"]["api_key"]
+        if not api_key or "PASTE_YOUR" in api_key.upper():
+            raise ValueError("Placeholder API key detected")
+        return init_sms(username, api_key), False
+    except Exception:
+        return MockSMSClient(), True
+
+
+sms_client, sms_is_mock = get_sms_client()
+
+
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
+=======
+
+>>>>>>> c5546d6249a4a1419d67e2225c630414595cb31b
 st.sidebar.markdown("### 🌾 KFPEWS")
 page = st.sidebar.radio(
     "Navigate",
@@ -151,6 +189,11 @@ st.sidebar.info(
     "This system uses food price data from WFP and weather data from NASA POWER "
     "to forecast prices and generate early warnings."
 )
+
+if sms_is_mock:
+    st.sidebar.warning("SMS running in MOCK mode (demo only) — add real africastalking credentials to secrets.toml for actual sending.")
+else:
+    st.sidebar.success("SMS alerts ready (sandbox mode unless configured otherwise).")
 
 
 
@@ -298,7 +341,77 @@ def render_decision_support(row):
     st.warning("These are general observations, not individualized recommendations. Please weigh your own circumstances before acting.")
 
 
+<<<<<<< HEAD
+# ---------------------------------------------------------------------------
+# Shared: SMS demo/send widget, used on the Early Warnings page
+# ---------------------------------------------------------------------------
+def render_sms_notify_section(flagged_df):
+    st.divider()
+    st.subheader("📲 Notify Stakeholders via SMS")
 
+    if sms_is_mock:
+        st.info(
+            "🎭 **Mock mode** — no real Africa's Talking account is connected yet. "
+            "Sends below are simulated for demonstration only; no real SMS goes out. "
+            "Add real credentials to `.streamlit/secrets.toml` to send actual messages."
+        )
+
+    demo_mode = st.checkbox(
+        "🧪 Demo mode (send only to a test number, not real stakeholders)",
+        value=True,
+        help="Keep this ON while testing. Sandbox mode never sends real SMS or incurs cost "
+             "unless the destination number is registered in the Africa's Talking Simulator.",
+    )
+
+    consolidated = st.checkbox(
+        "Send one consolidated message per stakeholder (recommended)",
+        value=True,
+        help="Off = one SMS per flagged pair per stakeholder, which can get expensive/spammy "
+             "fast if many pairs are flagged.",
+    )
+
+    if demo_mode:
+        demo_phone = st.text_input(
+            "Test phone number (must be registered in the AT Simulator to actually receive it)",
+            value="+254712345678",
+        )
+        stakeholders_to_use = demo_stakeholder(demo_phone)
+        st.caption(f"Demo will send to 1 test number: {demo_phone}")
+    else:
+        try:
+            stakeholders_to_use = load_stakeholders("stakeholders.csv")
+            st.caption(f"{len(stakeholders_to_use)} real stakeholders loaded from stakeholders.csv")
+        except Exception as e:
+            st.error(f"Could not load stakeholders.csv: {e}")
+            return
+
+    st.write(f"**{len(flagged_df)}** pair(s) currently flagged will be included in the alert.")
+
+    if st.button("Send SMS alert now"):
+        with st.spinner("Sending SMS..."):
+            log_df = send_alerts(
+                sms_client, stakeholders_to_use, flagged_df,
+                consolidated=consolidated,
+            )
+        sent = (log_df["status"] == "sent").sum()
+        if sms_is_mock:
+            st.success(f"{sent}/{len(log_df)} message(s) simulated successfully (mock mode — nothing was actually sent).")
+        else:
+            st.success(f"{sent}/{len(log_df)} message(s) sent successfully.")
+        st.dataframe(log_df, use_container_width=True, hide_index=True)
+        if demo_mode and not sms_is_mock:
+            st.info(
+                "Sandbox mode: no real charge was made. If your number is registered in the "
+                "Africa's Talking Simulator, check your phone for the message."
+            )
+
+
+# ---------------------------------------------------------------------------
+# Page: Overview
+# ---------------------------------------------------------------------------
+=======
+
+>>>>>>> c5546d6249a4a1419d67e2225c630414595cb31b
 def page_overview():
     header_col1, header_col2 = st.columns([3, 1])
     with header_col1:
@@ -397,6 +510,8 @@ def page_early_warnings():
         "expanding historical pattern — validated in backtesting against three real documented Kenyan price shocks "
         "(27.6% flag rate during shock windows vs. a 9.7% baseline). See About for details."
     )
+
+    render_sms_notify_section(flagged)
 
 
 # ---------------------------------------------------------------------------
