@@ -123,6 +123,15 @@ hr { margin: 0.6rem 0 1.2rem 0; border-color: #E2E8F0; }
 
 /* Alerts */
 div[data-testid="stAlert"] { border-radius: 10px; border: 1px solid rgba(0,0,0,0.04); }
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] div {
+    color: #E2E8F0 !important;
+}
+[data-testid="stSidebar"] h3 {
+    color: #FFFFFF !important;
+}
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
